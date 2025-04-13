@@ -1,11 +1,9 @@
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Operaciones:
-    def __init__(self, ruta_imagen):
-        self.imagen = cv2.imread(ruta_imagen)
-        if self.imagen is None:
-            raise ValueError("No se pudo cargar la imagen.")
+    def __init__(self):
         self.screen_width = 1920
         self.screen_height = 1080
 
@@ -16,46 +14,53 @@ class Operaciones:
             y = (self.screen_height - window_size[3]) // 2
             cv2.moveWindow(window_name, x, y)
 
-    def operaciones_aritmeticas(self, valor=50, factor=1.2):
-        suma = cv2.add(self.imagen, valor)
-        resta = cv2.subtract(self.imagen, valor)
-        multiplicacion = cv2.multiply(self.imagen, factor)
+    def aGris(self, imagen=None):
+        return cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+    
+    def umbralizar(self, image, umbral):
+        # Umbralización para binarizar la imagen
+        _, binary_image = cv2.threshold(image, umbral, 255, cv2.THRESH_BINARY)
+        return binary_image
 
-        cv2.imshow("Original", self.imagen)
-        self.center_window("Original")
+    def suma(self, valor=50, imagen=None):
+        return cv2.add(imagen, valor)
 
-        cv2.imshow("Suma", suma)
-        self.center_window("Suma")
+    def resta(self, valor=50, imagen=None):
+        return cv2.subtract(imagen, valor)
 
-        cv2.imshow("Resta", resta)
-        self.center_window("Resta")
+    def multiplicacion(self, factor=1.2, imagen=None):
+        return cv2.multiply(imagen, factor)
 
-        cv2.imshow("Multiplicación", multiplicacion)
-        self.center_window("Multiplicación")
-
+    def esperar_cerrar(self):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def operaciones_logicas(self, ruta_imagen2):
-        img2 = cv2.imread(ruta_imagen2)
-        if img2 is None:
-            raise ValueError("No se pudo cargar la segunda imagen.")
+    def operacion_and(self, ruta_imagen2):
+        return self._operacion_logica(ruta_imagen2, 'AND')
 
-        img1 = cv2.resize(self.imagen, (300, 300))
+    def operacion_or(self, ruta_imagen2):
+        return self._operacion_logica(ruta_imagen2, 'OR')
+
+    def operacion_xor(self, ruta_imagen2):
+        return self._operacion_logica(ruta_imagen2, 'XOR')
+
+    def _operacion_logica(self, img1, img2, tipo):
+        img1 = cv2.resize(img1, (300, 300))
         img2 = cv2.resize(img2, (300, 300))
 
-        and_img = cv2.bitwise_and(img1, img2)
-        or_img = cv2.bitwise_or(img1, img2)
-        xor_img = cv2.bitwise_xor(img1, img2)
+        if tipo == 'AND':
+            return cv2.bitwise_and(img1, img2)
+        elif tipo == 'OR':
+            return cv2.bitwise_or(img1, img2)
+        elif tipo == 'XOR':
+            return cv2.bitwise_xor(img1, img2)
+        else:
+            raise ValueError("Operación lógica no válida.")
 
-        cv2.imshow("AND", and_img)
-        self.center_window("AND")
-
-        cv2.imshow("OR", or_img)
-        self.center_window("OR")
-
-        cv2.imshow("XOR", xor_img)
-        self.center_window("XOR")
-
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+    def mostrar_histograma(self, imagen=None):
+        plt.figure()
+        plt.hist(imagen.ravel(), bins=256, range=[0, 256], color='gray')
+        plt.title("Histograma - Imagen Original")
+        plt.xlabel("Intensidad")
+        plt.ylabel("Frecuencia")
+        plt.show()
