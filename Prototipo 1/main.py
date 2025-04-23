@@ -43,7 +43,7 @@ class App(cusTK.CTk):
         #Menu para archivos
         self.archivos_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Abrir", "Cerrar"],
+            values=["Abrir Imagen", "Guardar Imagen Activa", "Cerrar Imagen Activa"],
             command=self.archivos_action
         )
         self.archivos_menu.set("Archivos")
@@ -52,7 +52,7 @@ class App(cusTK.CTk):
         #Menu de operaciones
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Suma", "Resta", "Multiplicación", "Color a Gris", "Umbralizar", "AND", "OR", "XOR", "Ecualizar Uniformemente", "Histograma Imagen 1"],
+            values=["Canales RGB", "Suma", "Resta", "Multiplicación", "Color a Gris", "Umbralizar", "AND", "OR", "XOR", "Ecualizar Uniformemente", "Histograma Imagen Activa"],
             command=self.operaciones_action
         )
         self.operaciones_menu.set("Operaciones")
@@ -114,10 +114,7 @@ class App(cusTK.CTk):
             self.imagen_actual = 2
         elif seleccion == "Imagen 3 (Resultado)":
             self.imagen_actual = 3
-
-        nuevasOpciones = ["Suma", "Resta", "Multiplicación", "Color a Gris", "Umbralizar", "AND", "OR", "XOR", "Ecualizar Uniformemente", f"Histograma Imagen {self.imagen_actual}"]
-
-        self.operaciones_menu.configure(values=nuevasOpciones)
+        
         self.operaciones_menu.set("Operaciones")  #Opcional: volver al título inicial
 
     def obtener_imagen_actual(self):
@@ -130,14 +127,22 @@ class App(cusTK.CTk):
         return None
 
     def archivos_action(self, choice): #Acciones del menú de archivos
-        if choice == "Abrir":
+        if choice == "Abrir Imagen":
             self.abrir_imagen()
-        elif choice == "Salir":
-            self.quit()
+        elif choice == "Guardar Imagen Activa":
+            self.guardar_imagen()
+        elif choice == "Cerrar Imagen Activa":
+            self.cerrar_imagen()
 
     def operaciones_action(self, choice): #Acciones del menú de operaciones
         print(f"Operación seleccionada: {choice}")
-        if choice == "Suma":
+        if choice == "Canales RGB":
+            actual = self.obtener_imagen_actual()
+            if actual is None: 
+                self.errores_message("No se ha cargado una imagen.")
+                return
+            resultado = self.op.mostrar_componentes_RGB(imagen=actual)
+        elif choice == "Suma":
             actual = self.obtener_imagen_actual()
             if actual is None: 
                 self.errores_message("No se ha cargado una imagen.")
@@ -186,7 +191,7 @@ class App(cusTK.CTk):
             resultado = self.ec.ecualizar_uniformemente(actual)
             self.resultado = resultado
             self.mostrar_resultado(resultado)
-        elif choice == f"Histograma Imagen {self.imagen_actual}":
+        elif choice == "Histograma Imagen Activa":
             if self.obtener_imagen_actual() is None:
                 self.errores_message("No se ha cargado una imagen.")
                 return
@@ -198,26 +203,22 @@ class App(cusTK.CTk):
         if actual is None:
             self.errores_message("No se ha cargado una imagen.")
             return
-
-        #Crear ventana emergente
-        self.ventana_umbral = cusTK.CTkToplevel(self)
+        
+        self.ventana_umbral = cusTK.CTkToplevel(self)#Crear ventana emergente
         self.ventana_umbral.title("Ajustar umbral")
         self.ventana_umbral.geometry("300x150")
         self.ventana_umbral.grab_set()  #Hace modal la ventana
 
-        #Etiqueta
-        self.label_umbral_popup = cusTK.CTkLabel(self.ventana_umbral, text="Umbral: 127")
+        self.label_umbral_popup = cusTK.CTkLabel(self.ventana_umbral, text="Umbral: 127") #Etiqueta
         self.label_umbral_popup.pack(pady=10)
 
-        #Slider
-        self.slider_umbral_popup = cusTK.CTkSlider(
+        self.slider_umbral_popup = cusTK.CTkSlider( #Slider
             self.ventana_umbral, from_=0, to=255, command=self.actualizar_umbral_popup
         )
         self.slider_umbral_popup.set(127)
         self.slider_umbral_popup.pack(pady=10)
-
-        #Botón para aplicar
-        boton_aplicar = cusTK.CTkButton(
+        
+        boton_aplicar = cusTK.CTkButton( #Botón para aplicar
             self.ventana_umbral, text="Aplicar", command=self.aplicar_umbral
         )
         boton_aplicar.pack(pady=10)
@@ -269,6 +270,37 @@ class App(cusTK.CTk):
             self.image_label2.configure(image=self.tk_img2)
         else:
             self.image_label2.configure(image=None)
+
+    def guardar_imagen(self):
+        actual = self.obtener_imagen_actual()
+        if actual is not None:
+            file_path = filedialog.asksaveasfilename( #Elegir la ruta y el nombre del archivo
+                defaultextension=".png",
+                filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg"), ("BMP files", "*.bmp")],
+                title="Guardar imagen como"
+            )
+            if file_path:
+                cv2.imwrite(file_path, actual) #Guardar la imagen usando OpenCV
+            return
+        else:
+            self.errores_message("No hay una imagen activa para guardar.")
+            return
+    
+    def cerrar_imagen(self):
+        if self.imagen_actual == 1:
+            self.imagen1 = None
+            self.tk_img1 = None
+            self.image_label1.configure(image=None)
+        elif self.imagen_actual == 2:
+            self.imagen2 = None
+            self.tk_img2 = None
+            self.image_label2.configure(image=None)
+        elif self.imagen_actual == 3:
+            self.resultado = None
+            self.resultadoLabel.configure(image=None)
+        else:
+            self.errores_message("Ha ocurrido un error inesperado al cerrar la imagen.")
+            return
 
     def errores_message(self, message): #Función para mostrar mensajes de error
         tk.messagebox.showinfo("Error", message)

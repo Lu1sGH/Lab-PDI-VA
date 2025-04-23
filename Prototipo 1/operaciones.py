@@ -64,3 +64,20 @@ class Operaciones:
         plt.xlabel("Intensidad")
         plt.ylabel("Frecuencia")
         plt.show()
+
+        color = ('b', 'g', 'r')
+        for i, col in enumerate(color):
+            hist = cv2.calcHist([imagen], [i], None, [256], [0, 256])
+            plt.plot(hist, color=col)
+            plt.xlim([0, 256])
+
+        plt.title('Histograma de la Imagen en Color')
+        plt.show()
+
+    def mostrar_componentes_RGB(self, imagen=None):
+        b, g, r = cv2.split(imagen)
+
+        zeros = np.zeros(imagen.shape[:2], dtype="uint8")
+        cv2.imshow("Rojo", cv2.merge([zeros, zeros, r]))
+        cv2.imshow("Verde", cv2.merge([zeros, g, zeros]))
+        cv2.imshow("Azul", cv2.merge([b, zeros, zeros]))
