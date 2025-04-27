@@ -11,6 +11,7 @@ from PIL import Image, ImageTk
 #Librerias para PDI
 from ecualizacion import Ecualizador
 from operaciones import Operaciones
+from filtros_max_min import FiltrosMaxMin
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
