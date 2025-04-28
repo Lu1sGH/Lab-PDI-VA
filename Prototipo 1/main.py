@@ -7,6 +7,7 @@ from customtkinter import CTkImage
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
+import Messages as msg #Libreria para mensajes de error y alerta
 
 #Librerias para PDI
 from ecualizacion import Ecualizador
@@ -30,8 +31,9 @@ class App(cusTK.CTk):
         self.resizable(True, True)
 
         #Inicialización de variables para la manipulación de imágenes
-        self.op = Operaciones()
-        self.ec = Ecualizador()
+        self.op = Operaciones() #Instancia de la clase de operaciones
+        self.ec = Ecualizador() #Instancia de la clase de ecualización
+        self.fil = FiltrosMaxMin() #Instancia de la clase de filtros
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
@@ -50,16 +52,7 @@ class App(cusTK.CTk):
         self.archivos_menu.set("Archivos")
         self.archivos_menu.pack(side="left", padx=10, pady=10)
 
-        #Menu de operaciones
-        self.operaciones_menu = cusTK.CTkOptionMenu(
-            self.top_bar,
-            values=["Canales RGB", "Suma", "Resta", "Multiplicación", "Color a Gris", "Umbralizar", "AND", "OR", "XOR", "Ecualizar Uniformemente", "Histograma Imagen Activa"],
-            command=self.operaciones_action
-        )
-        self.operaciones_menu.set("Operaciones")
-        self.operaciones_menu.pack(side="left", padx=10, pady=10)
-
-        #Menu para seleccionar imagen
+        #Menu para seleccionar imagen. Este menú permite elegir la imagen activa para operar.
         self.selector_menu = cusTK.CTkOptionMenu(
             self.top_bar,
             values=["Imagen 1", "Imagen 2", "Imagen 3 (Resultado)"],
@@ -68,6 +61,25 @@ class App(cusTK.CTk):
         self.selector_menu.set("Elegir imagen activa")
         self.selector_menu.pack(side="left", padx=10, pady=10)
 
+        #Menu de operaciones
+        self.operaciones_menu = cusTK.CTkOptionMenu(
+            self.top_bar,
+            values=["Canales RGB", "Suma", "Resta", "Multiplicación", "Convertir a escala de grises", "Umbralizar", "AND", "OR", "XOR", "Ecualizar Uniformemente", "Histograma Imagen Activa"],
+            command=self.operaciones_action
+        )
+        self.operaciones_menu.set("Operaciones")
+        self.operaciones_menu.pack(side="left", padx=10, pady=10)
+
+        #Menu para filtros
+        self.archivos_menu = cusTK.CTkOptionMenu(
+            self.top_bar,
+            values=["Filtro Máximo", "Filtro Mínimo"],
+            command=self.filtros_action
+        )
+        self.archivos_menu.set("Filtros")
+        self.archivos_menu.pack(side="left", padx=10, pady=10)
+
+        #Botón para cambiar entre modo claro y oscuro
         self.toggle_button = cusTK.CTkButton(self.top_bar, text="Modo oscuro", command=self.toggle_theme)
         self.toggle_button.pack(side="right", padx=10, pady=10)
 
@@ -101,12 +113,16 @@ class App(cusTK.CTk):
         self.resultadoLabel.pack(fill="both", expand=True, padx=10, pady=10)
 
     def toggle_theme(self): #Cambiar entre modo claro y oscuro
-        if cusTK.get_appearance_mode() == "Light":
-            cusTK.set_appearance_mode("Dark")
-            self.toggle_button.configure(text="Modo claro")
-        else:
-            cusTK.set_appearance_mode("Light")
-            self.toggle_button.configure(text="Modo oscuro")
+        try:
+            if cusTK.get_appearance_mode() == "Light":
+                cusTK.set_appearance_mode("Dark")
+                self.toggle_button.configure(text="Modo claro")
+            else:
+                cusTK.set_appearance_mode("Light")
+                self.toggle_button.configure(text="Modo oscuro")
+        except Exception as e:
+            msg.error_message(f"Error al cambiar el tema: {str(e)}")
+            print(f"Error al cambiar el tema: {str(e)}")
 
     def cambiar_imagen_actual(self, seleccion):
         if seleccion == "Imagen 1":
@@ -116,16 +132,20 @@ class App(cusTK.CTk):
         elif seleccion == "Imagen 3 (Resultado)":
             self.imagen_actual = 3
         
-        self.operaciones_menu.set("Operaciones")  #Opcional: volver al título inicial
+        self.operaciones_menu.set("Operaciones")  #Recargar el menú de operaciones
 
     def obtener_imagen_actual(self):
-        if self.imagen_actual == 1:
-            return self.imagen1
-        elif self.imagen_actual == 2:
-            return self.imagen2
-        elif self.imagen_actual == 3:
-            return self.resultado
-        return None
+        try:
+            if self.imagen_actual == 1:
+                return self.imagen1
+            elif self.imagen_actual == 2:
+                return self.imagen2
+            elif self.imagen_actual == 3:
+                return self.resultado
+        except Exception as e:
+            msg.error_message(f"Error al obtener la imagen actual: {str(e)}")
+            print(f"Error al obtener la imagen actual: {str(e)}")
+            return None
 
     def archivos_action(self, choice): #Acciones del menú de archivos
         if choice == "Abrir Imagen":
@@ -136,73 +156,96 @@ class App(cusTK.CTk):
             self.cerrar_imagen()
 
     def operaciones_action(self, choice): #Acciones del menú de operaciones
-        print(f"Operación seleccionada: {choice}")
-        if choice == "Canales RGB":
-            actual = self.obtener_imagen_actual()
-            if actual is None: 
-                self.errores_message("No se ha cargado una imagen.")
-                return
-            resultado = self.op.mostrar_componentes_RGB(imagen=actual)
-        elif choice == "Suma":
-            actual = self.obtener_imagen_actual()
-            if actual is None: 
-                self.errores_message("No se ha cargado una imagen.")
-                return
-            resultado = self.op.suma(imagen=actual)
-            self.resultado = resultado
-            self.mostrar_resultado(resultado)
-        elif choice == "Resta":
-            actual = self.obtener_imagen_actual()
-            if actual is None: 
-                self.errores_message("No se ha cargado una imagen.")
-                return
-            resultado = self.op.resta(imagen=actual)
-            self.resultado = resultado
-            self.mostrar_resultado(resultado)
-        elif choice == "Multiplicación":
-            actual = self.obtener_imagen_actual()
-            if actual is None: 
-                self.errores_message("No se ha cargado una imagen.")
-                return
-            resultado = self.op.multiplicacion(imagen=actual)
-            self.resultado = resultado
-            self.mostrar_resultado(resultado)
-        elif choice == "Color a Gris":
-            actual = self.obtener_imagen_actual()
-            if actual is None: 
-                self.errores_message("No se ha cargado una imagen.")
-                return
-            resultado = self.op.aGris(imagen=actual)
-            self.resultado = resultado
-            self.mostrar_resultado(resultado)
-        elif choice == "Umbralizar":
-            self.elegir_umbral()
-        elif choice == "AND" or choice == "OR" or choice == "XOR":
-            if self.imagen2 is None:
-                self.errores_message("Debe cargar dos imágenes para realizar operaciones lógicas.")
-                return
-            resultado = self.op._operacion_logica(self.imagen1, self.imagen2, choice)
-            self.resultado = resultado
-            self.mostrar_resultado(resultado)
-        elif choice == "Ecualizar Uniformemente":
+        try:
+            print(f"Operación seleccionada: {choice}")
+            if choice == "Canales RGB":
+                actual = self.obtener_imagen_actual()
+                if actual is None: 
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    return
+                resultado = self.op.mostrar_componentes_RGB(imagen=actual)
+            elif choice == "Suma":
+                actual = self.obtener_imagen_actual()
+                if actual is None: 
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    return
+                resultado = self.op.suma(imagen=actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Resta":
+                actual = self.obtener_imagen_actual()
+                if actual is None: 
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    return
+                resultado = self.op.resta(imagen=actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Multiplicación":
+                actual = self.obtener_imagen_actual()
+                if actual is None: 
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    return
+                resultado = self.op.multiplicacion(imagen=actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Convertir a escala de grises":
+                actual = self.obtener_imagen_actual()
+                if actual is None: 
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    return
+                resultado = self.op.aGris(imagen=actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Umbralizar":
+                self.elegir_umbral()
+            elif choice == "AND" or choice == "OR" or choice == "XOR":
+                if self.imagen2 is None:
+                    msg.alerta_message("Debe cargar dos imágenes para realizar operaciones lógicas.")
+                    return
+                resultado = self.op._operacion_logica(self.imagen1, self.imagen2, choice)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Ecualizar Uniformemente":
+                actual = self.obtener_imagen_actual()
+                if actual is None:
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    return
+                resultado = self.ec.ecualizar_uniformemente(actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Histograma Imagen Activa":
+                if self.obtener_imagen_actual() is None:
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    return
+                actual = self.obtener_imagen_actual()
+                self.op.mostrar_histograma(actual)
+        except Exception as e:
+            msg.error_message(f"Error en las operaciones: {str(e)}")
+            print(f"Error al realizar la operación: {str(e)}")
+
+    def filtros_action(self, choice): #Acciones del menú de filtros
+        try:
             actual = self.obtener_imagen_actual()
             if actual is None:
-                self.errores_message("No se ha cargado una imagen.")
+                msg.alerta_message("No se ha cargado una imagen.")
                 return
-            resultado = self.ec.ecualizar_uniformemente(actual)
-            self.resultado = resultado
-            self.mostrar_resultado(resultado)
-        elif choice == "Histograma Imagen Activa":
-            if self.obtener_imagen_actual() is None:
-                self.errores_message("No se ha cargado una imagen.")
-                return
-            actual = self.obtener_imagen_actual()
-            self.op.mostrar_histograma(actual)
+            
+            if choice == "Filtro Máximo":
+                resultado = self.fil.aplicar_filtro(actual, choice)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Filtro Mínimo":
+                resultado = self.fil.aplicar_filtro(actual, choice)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+        except Exception as e:
+            msg.error_message(f"Error al aplicar el filtro: {str(e)}")
+            print(f"Error al aplicar el filtro: {str(e)}")
 
     def elegir_umbral(self): #Popup para elegir el umbral
         actual = self.obtener_imagen_actual()
         if actual is None:
-            self.errores_message("No se ha cargado una imagen.")
+            msg.alerta_message("No se ha cargado una imagen.")
             return
         
         self.ventana_umbral = cusTK.CTkToplevel(self)#Crear ventana emergente
@@ -235,76 +278,96 @@ class App(cusTK.CTk):
         self.ventana_umbral.destroy()
 
     def abrir_imagen(self): #Carga de imágenes
-        file_path = filedialog.askopenfilename(filetypes=[("Imágenes", "*.png;*.jpg;*.jpeg;*.bmp")])
-        if file_path:
-            img = cv2.imread(file_path)
-            if img is not None:
-                if self.imagen1 is None:
-                    self.imagen1 = img
-                elif self.imagen2 is None:
-                    self.imagen2 = img
-                else:
-                    self.errores_message("Ya se han cargado dos imágenes.")
-                    return
-                self.mostrar_imagenes()
+        try:
+            file_path = filedialog.askopenfilename(filetypes=[("Imágenes", "*.png;*.jpg;*.jpeg;*.bmp")])
+            if file_path:
+                img = cv2.imread(file_path)
+                if img is not None:
+                    if self.imagen1 is None:
+                        self.imagen1 = img
+                    elif self.imagen2 is None:
+                        self.imagen2 = img
+                    else:
+                        msg.alerta_message("Ya se han cargado dos imágenes.")
+                        return
+                    self.mostrar_imagenes()
+        except Exception as e:
+            msg.error_message(f"Error al abrir la imagen: {str(e)}")
+            print(f"Error al abrir la imagen: {str(e)}")
 
     def mostrar_resultado(self, resultado): #Muestra el resultado de la operación en el frame de resultados
-        resultado_pil = Image.fromarray(cv2.cvtColor(resultado, cv2.COLOR_BGR2RGB))
-        resultado_pil.thumbnail((700, 700))
-        self.resultadoLabel.configure(image=CTkImage(dark_image=resultado_pil, size=resultado_pil.size))
+        try:
+            if resultado is not None:
+                resultado_pil = Image.fromarray(cv2.cvtColor(resultado, cv2.COLOR_BGR2RGB))
+                resultado_pil.thumbnail((700, 700))
+                tk_resultado = CTkImage(dark_image=resultado_pil, size=resultado_pil.size)
+                self.resultadoLabel.configure(image=tk_resultado)
+            else:
+                tk_resultado = None
+                self.resultadoLabel.configure(image=None)
+        except Exception as e:
+            msg.error_message(f"Error al mostrar el resultado: {str(e)}")
+            print(f"Error al mostrar el resultado: {str(e)}")
 
     def mostrar_imagenes(self): #Muestra las imágenes en los frames correspondientes
-        if self.imagen1 is not None:
-            img_rgb1 = cv2.cvtColor(self.imagen1, cv2.COLOR_BGR2RGB)
-            img_pil1 = Image.fromarray(img_rgb1)
-            img_pil1.thumbnail((800, 400))
-            self.tk_img1 = CTkImage(dark_image=img_pil1, size=img_pil1.size)
-            self.image_label1.configure(image=self.tk_img1)
-        else:
-            self.image_label1.configure(image=None)
+        try:
+            if self.imagen1 is not None:
+                img_rgb1 = cv2.cvtColor(self.imagen1, cv2.COLOR_BGR2RGB)
+                img_pil1 = Image.fromarray(img_rgb1)
+                img_pil1.thumbnail((800, 400))
+                self.tk_img1 = CTkImage(dark_image=img_pil1, size=img_pil1.size)
+                self.image_label1.configure(image=self.tk_img1)
+            else:
+                self.tk_img1 = None
+                self.image_label1.configure(image=None)
 
-        if self.imagen2 is not None:
-            img_rgb2 = cv2.cvtColor(self.imagen2, cv2.COLOR_BGR2RGB)
-            img_pil2 = Image.fromarray(img_rgb2)
-            img_pil2.thumbnail((800, 400))
-            self.tk_img2 = CTkImage(dark_image=img_pil2, size=img_pil2.size)
-            self.image_label2.configure(image=self.tk_img2)
-        else:
-            self.image_label2.configure(image=None)
+            if self.imagen2 is not None:
+                img_rgb2 = cv2.cvtColor(self.imagen2, cv2.COLOR_BGR2RGB)
+                img_pil2 = Image.fromarray(img_rgb2)
+                img_pil2.thumbnail((800, 400))
+                self.tk_img2 = CTkImage(dark_image=img_pil2, size=img_pil2.size)
+                self.image_label2.configure(image=self.tk_img2)
+            else:
+                self.tk_img2 = None
+                self.image_label2.configure(image=None)
+        except Exception as e:
+            msg.error_message(f"Error al mostrar las imágenes: {str(e)}")
+            print(f"Error al mostrar las imágenes: {str(e)}")
 
     def guardar_imagen(self):
-        actual = self.obtener_imagen_actual()
-        if actual is not None:
-            file_path = filedialog.asksaveasfilename( #Elegir la ruta y el nombre del archivo
-                defaultextension=".png",
-                filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg"), ("BMP files", "*.bmp")],
-                title="Guardar imagen como"
-            )
-            if file_path:
-                cv2.imwrite(file_path, actual) #Guardar la imagen usando OpenCV
-            return
-        else:
-            self.errores_message("No hay una imagen activa para guardar.")
+        try:
+            actual = self.obtener_imagen_actual()
+            if actual is not None:
+                file_path = filedialog.asksaveasfilename( #Elegir la ruta y el nombre del archivo
+                    defaultextension=".png",
+                    filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg"), ("BMP files", "*.bmp")],
+                    title="Guardar imagen como"
+                )
+                if file_path:
+                    cv2.imwrite(file_path, actual) #Guardar la imagen usando OpenCV
+                return
+            else:
+                msg.alerta_message("No hay una imagen activa para guardar.")
+                return
+        except Exception as e:
+            msg.error_message(f"Error al guardar la imagen: {str(e)}")
+            print(f"Error al guardar la imagen: {str(e)}")
             return
     
     def cerrar_imagen(self):
-        if self.imagen_actual == 1:
-            self.imagen1 = None
-            self.tk_img1 = None
-            self.image_label1.configure(image=None)
-        elif self.imagen_actual == 2:
-            self.imagen2 = None
-            self.tk_img2 = None
-            self.image_label2.configure(image=None)
-        elif self.imagen_actual == 3:
-            self.resultado = None
-            self.resultadoLabel.configure(image=None)
-        else:
-            self.errores_message("Ha ocurrido un error inesperado al cerrar la imagen.")
-            return
-
-    def errores_message(self, message): #Función para mostrar mensajes de error
-        tk.messagebox.showinfo("Error", message)
+        try:
+            if self.imagen_actual == 1:
+                self.imagen1 = None
+                self.mostrar_imagenes()
+            elif self.imagen_actual == 2:
+                self.imagen2 = None
+                self.mostrar_imagenes()
+            elif self.imagen_actual == 3:
+                self.resultado = None
+                self.mostrar_resultado(None)
+        except Exception as e:
+            msg.error_message(f"Error al cerrar la imagen: {str(e)}")
+            print(f"Error al cerrar la imagen: {str(e)}")
 
 if __name__ == "__main__":
     app = App()

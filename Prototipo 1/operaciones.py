@@ -1,83 +1,105 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import Messages as msg
 
 class Operaciones:
-    def __init__(self):
-        self.screen_width = 1920
-        self.screen_height = 1080
-
-    def center_window(self, window_name):
-        window_size = cv2.getWindowImageRect(window_name)
-        if window_size[2] > 0 and window_size[3] > 0:
-            x = (self.screen_width - window_size[2]) // 2
-            y = (self.screen_height - window_size[3]) // 2
-            cv2.moveWindow(window_name, x, y)
-
     def aGris(self, imagen=None):
-        return cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+        try:
+            return cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+        except Exception as e:
+            msg.error_message(f"Error al convertir a escala de grises: {str(e)}")
+            print(f"Error al convertir a escala de grises: {str(e)}")
+            return None
     
     def umbralizar(self, image, umbral):
-        # Umbralización para binarizar la imagen
-        _, binary_image = cv2.threshold(image, umbral, 255, cv2.THRESH_BINARY)
-        return binary_image
+        try:
+            #Umbralización para binarizar la imagen
+            _, binary_image = cv2.threshold(image, umbral, 255, cv2.THRESH_BINARY)
+            return binary_image
+        except Exception as e:
+            msg.error_message(f"Error al umbralizar la imagen: {str(e)}")
+            print(f"Error al umbralizar la imagen: {str(e)}")
+            return None
 
     def suma(self, valor=50, imagen=None):
-        return cv2.add(imagen, valor)
+        try:
+            return cv2.add(imagen, valor)
+        except Exception as e:
+            msg.error_message(f"Error al sumar valor a la imagen: {str(e)}")
+            print(f"Error al sumar valor a la imagen: {str(e)}")
+            return None
 
     def resta(self, valor=50, imagen=None):
-        return cv2.subtract(imagen, valor)
+        try:
+            return cv2.subtract(imagen, valor)
+        except Exception as e:
+            msg.error_message(f"Error al restar valor a la imagen: {str(e)}")
+            print(f"Error al restar valor a la imagen: {str(e)}")
+            return None
 
     def multiplicacion(self, factor=1.2, imagen=None):
-        return cv2.multiply(imagen, factor)
-
-    def esperar_cerrar(self):
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-    def operacion_and(self, ruta_imagen2):
-        return self._operacion_logica(ruta_imagen2, 'AND')
-
-    def operacion_or(self, ruta_imagen2):
-        return self._operacion_logica(ruta_imagen2, 'OR')
-
-    def operacion_xor(self, ruta_imagen2):
-        return self._operacion_logica(ruta_imagen2, 'XOR')
+        try: 
+            return cv2.multiply(imagen, factor)
+        except Exception as e:
+            msg.error_message(f"Error al multiplicar la imagen: {str(e)}")
+            print(f"Error al multiplicar la imagen: {str(e)}")
+            return None
 
     def _operacion_logica(self, img1, img2, tipo):
-        img1 = cv2.resize(img1, (300, 300))
-        img2 = cv2.resize(img2, (300, 300))
+        try: 
+            fil, col = img1.shape[:2]
+            fil2, col2 = img2.shape[:2]
 
-        if tipo == 'AND':
-            return cv2.bitwise_and(img1, img2)
-        elif tipo == 'OR':
-            return cv2.bitwise_or(img1, img2)
-        elif tipo == 'XOR':
-            return cv2.bitwise_xor(img1, img2)
-        else:
-            raise ValueError("Operación lógica no válida.")
+            if fil != fil2 or col != col2:
+                img2 = cv2.resize(img2, (col, fil))
+
+            if tipo == 'AND':
+                return cv2.bitwise_and(img1, img2)
+            elif tipo == 'OR':
+                return cv2.bitwise_or(img1, img2)
+            elif tipo == 'XOR':
+                return cv2.bitwise_xor(img1, img2)
+        except Exception as e:
+            msg.error_message(f"Error en la operación lógica {tipo}: {str(e)}")
+            print(f"Error en la operación lógica: {str(e)}")
+            return None
 
     def mostrar_histograma(self, imagen=None):
-        plt.figure()
-        plt.hist(imagen.ravel(), bins=256, range=[0, 256], color='gray')
-        plt.title("Histograma - Imagen Original")
-        plt.xlabel("Intensidad")
-        plt.ylabel("Frecuencia")
-        plt.show()
+        try:
+            #Mostrar histograma de la imagen en escala de grises
+            plt.figure()  #Crea una nueva ventana para el histograma en escala de grises
+            plt.hist(imagen.ravel(), bins=256, range=[0, 256], color='gray')
+            plt.title("Histograma - Imagen Original")
+            plt.xlabel("Intensidad")
+            plt.ylabel("Frecuencia")
+            plt.show(block=False)
 
-        color = ('b', 'g', 'r')
-        for i, col in enumerate(color):
-            hist = cv2.calcHist([imagen], [i], None, [256], [0, 256])
-            plt.plot(hist, color=col)
-            plt.xlim([0, 256])
+            if len(imagen.shape) == 3 and imagen.shape[2] == 3:  #Verifica que la imagen tenga 3 canales (RGB)
+                #Mostrar histograma de la imagen en color (para cada canal RGB)
+                plt.figure()  #Crea una nueva ventana para el histograma de la imagen en color
+                color = ('b', 'g', 'r')
+                for i, col in enumerate(color):
+                    hist = cv2.calcHist([imagen], [i], None, [256], [0, 256])
+                    plt.plot(hist, color=col)
+                    plt.xlim([0, 256])
 
-        plt.title('Histograma de la Imagen en Color')
-        plt.show()
+                plt.title('Histograma de la Imagen en Color')
+                plt.xlabel("Intensidad")
+                plt.ylabel("Frecuencia")
+                plt.show(block=False)
+        except Exception as e:
+            msg.error_message(f"Error al mostrar el histograma: {str(e)}")
+            print(f"Error al mostrar el histograma: {str(e)}")
 
     def mostrar_componentes_RGB(self, imagen=None):
-        b, g, r = cv2.split(imagen)
+        try:
+            b, g, r = cv2.split(imagen)
 
-        zeros = np.zeros(imagen.shape[:2], dtype="uint8")
-        cv2.imshow("Rojo", cv2.merge([zeros, zeros, r]))
-        cv2.imshow("Verde", cv2.merge([zeros, g, zeros]))
-        cv2.imshow("Azul", cv2.merge([b, zeros, zeros]))
+            zeros = np.zeros(imagen.shape[:2], dtype="uint8")
+            cv2.imshow("Rojo", cv2.merge([zeros, zeros, r]))
+            cv2.imshow("Verde", cv2.merge([zeros, g, zeros]))
+            cv2.imshow("Azul", cv2.merge([b, zeros, zeros]))
+        except Exception as e:
+            msg.error_message(f"Error al mostrar los componentes RGB: {str(e)}")
+            print(f"Error al mostrar los componentes RGB: {str(e)}")
