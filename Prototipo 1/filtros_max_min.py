@@ -2,7 +2,6 @@ import numpy as np
 import Messages as msg
 
 class FiltrosMaxMin:
-
     def filtro_max(self, img=None):
         if img is None: return None
 
