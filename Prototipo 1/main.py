@@ -12,7 +12,7 @@ import Messages as msg #Libreria para mensajes de error y alerta
 #Librerias para PDI
 from ecualizacion import Ecualizador
 from operaciones import Operaciones
-from filtros_max_min import FiltrosMaxMin
+from FiltrosRuido import FiltrosYRuido
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -33,7 +33,7 @@ class App(cusTK.CTk):
         #Inicialización de variables para la manipulación de imágenes
         self.op = Operaciones() #Instancia de la clase de operaciones
         self.ec = Ecualizador() #Instancia de la clase de ecualización
-        self.fil = FiltrosMaxMin() #Instancia de la clase de filtros
+        self.fyR = FiltrosYRuido() #Instancia de la clase de filtros y ruido
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
@@ -61,22 +61,31 @@ class App(cusTK.CTk):
         self.selector_menu.set("Elegir imagen activa")
         self.selector_menu.pack(side="left", padx=10, pady=10)
 
+        #Menu de color. Muestra opciones sobre el color de la imagen activa.
+        self.operaciones_menu = cusTK.CTkOptionMenu(
+            self.top_bar,
+            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", "Histograma Imagen Activa"],
+            command=self.color_action
+        )
+        self.operaciones_menu.set("Color")
+        self.operaciones_menu.pack(side="left", padx=10, pady=10)
+
         #Menu de operaciones
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Canales RGB", "Suma", "Resta", "Multiplicación", "Convertir a escala de grises", "Umbralizar", "AND", "OR", "XOR", "Ecualizar Uniformemente", "Histograma Imagen Activa"],
+            values=["Suma", "Resta", "Multiplicación", "AND", "OR", "XOR", "Ecualizar Uniformemente"],
             command=self.operaciones_action
         )
         self.operaciones_menu.set("Operaciones")
         self.operaciones_menu.pack(side="left", padx=10, pady=10)
 
-        #Menu para filtros
+        #Menu para filtros y ruido
         self.archivos_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Filtro Máximo", "Filtro Mínimo"],
+            values=["Añadir ruido impulsivo", "Filtro Máximo", "Filtro Mínimo"],
             command=self.filtros_action
         )
-        self.archivos_menu.set("Filtros")
+        self.archivos_menu.set("Filtros y ruido")
         self.archivos_menu.pack(side="left", padx=10, pady=10)
 
         #Botón para cambiar entre modo claro y oscuro
@@ -155,70 +164,61 @@ class App(cusTK.CTk):
         elif choice == "Cerrar Imagen Activa":
             self.cerrar_imagen()
 
-    def operaciones_action(self, choice): #Acciones del menú de operaciones
+    def color_action(self, choice): #Acciones del menú de color
         try:
+            actual = self.obtener_imagen_actual()
+            if actual is None: 
+                msg.alerta_message("No se ha cargado una imagen.")
+                return
+            
             print(f"Operación seleccionada: {choice}")
             if choice == "Canales RGB":
-                actual = self.obtener_imagen_actual()
-                if actual is None: 
-                    msg.alerta_message("No se ha cargado una imagen.")
-                    return
                 resultado = self.op.mostrar_componentes_RGB(imagen=actual)
-            elif choice == "Suma":
-                actual = self.obtener_imagen_actual()
-                if actual is None: 
-                    msg.alerta_message("No se ha cargado una imagen.")
-                    return
-                resultado = self.op.suma(imagen=actual)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
-            elif choice == "Resta":
-                actual = self.obtener_imagen_actual()
-                if actual is None: 
-                    msg.alerta_message("No se ha cargado una imagen.")
-                    return
-                resultado = self.op.resta(imagen=actual)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
-            elif choice == "Multiplicación":
-                actual = self.obtener_imagen_actual()
-                if actual is None: 
-                    msg.alerta_message("No se ha cargado una imagen.")
-                    return
-                resultado = self.op.multiplicacion(imagen=actual)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
             elif choice == "Convertir a escala de grises":
-                actual = self.obtener_imagen_actual()
-                if actual is None: 
-                    msg.alerta_message("No se ha cargado una imagen.")
-                    return
                 resultado = self.op.aGris(imagen=actual)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
             elif choice == "Umbralizar":
                 self.elegir_umbral()
+            elif choice == "Histograma Imagen Activa":
+                actual = self.obtener_imagen_actual()
+                self.op.mostrar_histograma(actual)
+        except Exception as e:
+            msg.error_message(f"Error en las opciones de color: {str(e)}")
+            print(f"Error en las opciones de color: {str(e)}")
+
+    def operaciones_action(self, choice): #Acciones del menú de operaciones
+        try:
+            actual = self.obtener_imagen_actual()
+            if actual is None: 
+                msg.alerta_message("No se ha cargado una imagen.")
+                return
+            
+            print(f"Operación seleccionada: {choice}")
+            if choice == "Suma":
+                resultado = self.op.suma(imagen=actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Resta":
+                resultado = self.op.resta(imagen=actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Multiplicación":
+                resultado = self.op.multiplicacion(imagen=actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
             elif choice == "AND" or choice == "OR" or choice == "XOR":
                 if self.imagen2 is None:
                     msg.alerta_message("Debe cargar dos imágenes para realizar operaciones lógicas.")
                     return
+
                 resultado = self.op._operacion_logica(self.imagen1, self.imagen2, choice)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
             elif choice == "Ecualizar Uniformemente":
-                actual = self.obtener_imagen_actual()
-                if actual is None:
-                    msg.alerta_message("No se ha cargado una imagen.")
-                    return
                 resultado = self.ec.ecualizar_uniformemente(actual)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
-            elif choice == "Histograma Imagen Activa":
-                if self.obtener_imagen_actual() is None:
-                    msg.alerta_message("No se ha cargado una imagen.")
-                    return
-                actual = self.obtener_imagen_actual()
-                self.op.mostrar_histograma(actual)
         except Exception as e:
             msg.error_message(f"Error en las operaciones: {str(e)}")
             print(f"Error al realizar la operación: {str(e)}")
@@ -230,12 +230,16 @@ class App(cusTK.CTk):
                 msg.alerta_message("No se ha cargado una imagen.")
                 return
             
-            if choice == "Filtro Máximo":
-                resultado = self.fil.aplicar_filtro(actual, choice)
+            if choice == "Añadir ruido impulsivo":
+                resultado = self.fyR.ruido_salPimienta(actual, p=0.02)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Filtro Máximo":
+                resultado = self.fyR.aplicar_filtro(actual, choice)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
             elif choice == "Filtro Mínimo":
-                resultado = self.fil.aplicar_filtro(actual, choice)
+                resultado = self.fyR.aplicar_filtro(actual, choice)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
         except Exception as e:

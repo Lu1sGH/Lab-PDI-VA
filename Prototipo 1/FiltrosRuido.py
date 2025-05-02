@@ -1,20 +1,36 @@
+import cv2
 import numpy as np
 import Messages as msg
 
-class FiltrosMaxMin:
-    def filtro_max(self, img=None):
+class FiltrosYRuido:
+    def ruido_salPimienta(self, imagen, p=0.02):
+        img_ruidosa = imagen.copy() #Copia de la imagen original
+        c = img_ruidosa.shape[2] if len(img_ruidosa.shape) == 3 else 1 #Verificamos si la imagen es a color o en escala de grises
+        alt, anch = img_ruidosa.shape[:2] #Obtenemos las dimensiones de la imagen (alto y ancho)
+        pixeles_ruidosos = int(alt * anch * p) #Calculo de la cantidad de pixeles ruidosos (píxeles a agregar ruido).
+
+        for _ in range(pixeles_ruidosos): #Iteramos para agregar el ruido
+            fil, col = np.random.randint(0, alt), np.random.randint(0, anch) #Obtenemos una posición aleatoria de la imagen
+            if np.random.rand() < 0.5: #50% de probabilidad de agregar ruido tipo pimienta
+                img_ruidosa[fil, col] = [0, 0, 0] if c == 3 else 0 #Si la imagen es a color
+            else: #50% de probabilidad de agregar ruido tipo sal
+                img_ruidosa[fil, col] = [255, 255, 255] if c == 3 else 255 #Si la imagen es a color
+    
+        return img_ruidosa
+
+    def filtro_max(self, img=None): #Implementación del filtro máximo
         if img is None: return None
 
         self.img = img
         self.fil, self.col = self.img.shape
-        self.w_max = np.zeros((self.fil + 2, self.col + 2), dtype=np.uint8)
-        self.img_max = np.zeros((self.fil, self.col), dtype=np.uint8)
+        self.w_max = np.zeros((self.fil + 2, self.col + 2), dtype=np.uint8) #Se inicializa la máscara de 3x3 con ceros
+        self.img_max = np.zeros((self.fil, self.col), dtype=np.uint8) #Se inicializa la imagen de salida con ceros
 
         for j in range(1, self.fil + 1):
             for i in range(1, self.col + 1):
                 self.w_max[j, i] = self.img[j - 1, i - 1]
 
-                # Variables para w_max
+                # Variables para w_max (máscara de 3x3)
                 a = self.w_max[j - 1, i - 1]
                 b = self.w_max[j, i - 1]
                 c = self.w_max[j + 1, i - 1]
@@ -32,19 +48,19 @@ class FiltrosMaxMin:
                 self.img_max[j - 1, i - 1] = maximo
 
     
-    def filtro_min(self, img=None):
+    def filtro_min(self, img=None): #Implementación del filtro mínimo
         if img is None: return None
 
         self.img = img
         self.fil, self.col = self.img.shape
-        self.w_min = np.ones((self.fil + 2, self.col + 2), dtype=np.uint8) * 255
-        self.img_min = np.ones((self.fil, self.col), dtype=np.uint8) * 255
+        self.w_min = np.ones((self.fil + 2, self.col + 2), dtype=np.uint8) * 255 #Se inicializa la máscara de 3x3 con 255 (blanco)
+        self.img_min = np.ones((self.fil, self.col), dtype=np.uint8) * 255 #Se inicializa la imagen de salida con 255 (blanco)
 
         for j in range(1, self.fil + 1):
             for i in range(1, self.col + 1):
                 self.w_min[j, i] = self.img[j - 1, i - 1]
 
-                # Variables para w_min
+                # Variables para w_min (máscara de 3x3)
                 a1 = self.w_min[j - 1, i - 1]
                 b1 = self.w_min[j, i - 1]
                 c1 = self.w_min[j + 1, i - 1]
@@ -63,6 +79,9 @@ class FiltrosMaxMin:
 
     def aplicar_filtro(self, img, tipo_filtro):
         try:
+            if len(img.shape) == 3 and img.shape[2] == 3:  # Verifica si la imagen es a color (3 canales)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # Convierte a escala de grises
+
             if tipo_filtro == "Filtro Máximo":
                 self.filtro_max(img)
                 msg.todobien_message("Filtro máximo aplicado correctamente.")
