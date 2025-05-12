@@ -7,18 +7,17 @@ from customtkinter import CTkImage
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
-import Messages as msg #Libreria para mensajes de error y alerta
+import Messages as msg #Libreria (de creación propia) para mensajes de error y alerta
+import cv2
 
 #Librerias para PDI
 from ecualizacion import Ecualizador
 from operaciones import Operaciones
 from FiltrosRuido import FiltrosYRuido
+from Segmentacion import Segmentacion
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
-
-import cv2
-import numpy as np
 
 class App(cusTK.CTk):
     def __init__(self):
@@ -34,11 +33,15 @@ class App(cusTK.CTk):
         self.op = Operaciones() #Instancia de la clase de operaciones
         self.ec = Ecualizador() #Instancia de la clase de ecualización
         self.fyR = FiltrosYRuido() #Instancia de la clase de filtros y ruido
+        self.seg = Segmentacion() #Instancia de la clase de segmentación
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
         self.imagen_actual = 1  #Elige cual es la imagen que se va a operar. Por defecto, operar con la imagen 1
-
+        self.kernel = 3 #Tamaño kernel
+        self.c = 0 #C para umbralización adaptativa
+        self.const = 0 #Constante para operaciones aritmeticas
+        
         #Barra superior
         self.top_bar = cusTK.CTkFrame(self, height=50)
         self.top_bar.pack(side="top", fill="x")
@@ -73,7 +76,7 @@ class App(cusTK.CTk):
         #Menu de operaciones
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Suma", "Resta", "Multiplicación", "AND", "OR", "XOR", "Ecualizar Uniformemente"],
+            values=["Suma", "Resta", "Multiplicación", "AND", "OR", "XOR", "Ecualizar Uniformemente", "Umbralizar adaptativamente"],
             command=self.operaciones_action
         )
         self.operaciones_menu.set("Operaciones")
@@ -87,6 +90,10 @@ class App(cusTK.CTk):
         )
         self.archivos_menu.set("Filtros y ruido")
         self.archivos_menu.pack(side="left", padx=10, pady=10)
+
+        #Botón para ajustar constantes
+        self.cons_boton = cusTK.CTkButton(self.top_bar, text="Ajustar constantes", command=self.setConstantes)
+        self.cons_boton.pack(side="left", padx=10, pady=10)
 
         #Botón para cambiar entre modo claro y oscuro
         self.toggle_button = cusTK.CTkButton(self.top_bar, text="Modo oscuro", command=self.toggle_theme)
@@ -196,15 +203,15 @@ class App(cusTK.CTk):
             
             print(f"Operación seleccionada: {choice}")
             if choice == "Suma":
-                resultado = self.op.suma(imagen=actual)
+                resultado = self.op.suma(valor = self.const, imagen=actual)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
             elif choice == "Resta":
-                resultado = self.op.resta(imagen=actual)
+                resultado = self.op.resta(valor = self.const, imagen=actual)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
             elif choice == "Multiplicación":
-                resultado = self.op.multiplicacion(imagen=actual)
+                resultado = self.op.multiplicacion(factor = self.const, imagen=actual)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
             elif choice == "AND" or choice == "OR" or choice == "XOR":
@@ -217,6 +224,10 @@ class App(cusTK.CTk):
                 self.mostrar_resultado(resultado)
             elif choice == "Ecualizar Uniformemente":
                 resultado = self.ec.ecualizar_uniformemente(actual)
+                self.resultado = resultado
+                self.mostrar_resultado(resultado)
+            elif choice == "Umbralizar adaptativamente":
+                resultado = self.seg.umbralizacionAdaptativa(actual, kernel = self.kernel , c = self.c)
                 self.resultado = resultado
                 self.mostrar_resultado(resultado)
         except Exception as e:
@@ -372,6 +383,45 @@ class App(cusTK.CTk):
         except Exception as e:
             msg.error_message(f"Error al cerrar la imagen: {str(e)}")
             print(f"Error al cerrar la imagen: {str(e)}")
+
+    def setConstantes(self): #Método para ajustar constantes
+        popupC = cusTK.CTkToplevel(self)#Crear ventana emergente
+        popupC.title("Ajustar constantes")
+        popupC.geometry("300x300")
+        popupC.grab_set()  #Hace modal la ventana
+
+        def aceptar():
+            try:
+                kernel = int(entrada1.get())
+                c = int(entrada2.get())
+                const = int(entrada3.get())
+                if kernel % 2 != 1:
+                    msg.alerta_message("El tamaño del kernel tiene que ser un número impar.")
+                else:
+                    self.kernel = kernel
+                    self.c = c
+                    self.const = const
+                    popupC.destroy()
+            except ValueError:
+                msg.alerta_message("Por favor, ingrese solo números.")
+
+        #Elementos de la ventana
+        cusTK.CTkLabel(popupC, text="Tamaño del kernel:").pack(pady=(20, 5))
+        entrada1 = cusTK.CTkEntry(popupC)
+        entrada1.pack(pady=5)
+        entrada1.insert(0, str(self.kernel))
+
+        cusTK.CTkLabel(popupC, text="C para umbralizacion adaptativa:").pack(pady=5)
+        entrada2 = cusTK.CTkEntry(popupC)
+        entrada2.pack(pady=5)
+        entrada2.insert(0, str(self.c))
+
+        cusTK.CTkLabel(popupC, text="Cons para operaciones aritméticas:").pack(pady=5)
+        entrada3 = cusTK.CTkEntry(popupC)
+        entrada3.pack(pady=5)
+        entrada3.insert(0, str(self.const))
+
+        cusTK.CTkButton(popupC, text="Aceptar", command=aceptar).pack(pady=15)
 
 if __name__ == "__main__":
     app = App()
