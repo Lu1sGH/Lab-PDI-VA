@@ -17,6 +17,18 @@ class FiltrosYRuido:
                 img_ruidosa[fil, col] = [255, 255, 255] if c == 3 else 255 #Si la imagen es a color
     
         return img_ruidosa
+    
+    def ruidoGaussiano(self, img, media=0, desEs=25):
+        ruido = np.random.normal(media, desEs, img.shape).astype(np.uint8)
+        img_ruidosa = cv2.add(img, ruido)
+        return img_ruidosa
+    
+    def ruidoMultiplicativo(self, img, media=0, desEs=0.1):
+        img_float = img.astype(np.float32) / 255.0 #Convertir a float32 y normalizar a [0, 1]
+        ruido = np.random.normal(loc=media, scale=desEs, size=img.shape).astype(np.float32) #Generar ruido multiplicativo con la misma forma que la imagen
+        img_ruidosa = img_float * (1 + ruido) #Aplicar el ruido multiplicativo
+        img_ruidosa = np.clip(img_ruidosa, 0, 1) * 255 #Limitar a [0, 1] y convertir de nuevo a uint8
+        return img_ruidosa.astype(np.uint8)
 
     def filtro_max(self, img=None): #Implementación del filtro máximo
         if img is None: return None
@@ -94,3 +106,19 @@ class FiltrosYRuido:
             msg.error_message(f"Error al aplicar el {tipo_filtro}: {str(e)}")
             print(f"Error al aplicar el {tipo_filtro}: {e}")
             return None
+        
+    #Otros filtros
+    def filtro_promediador(self, img, ksize=3):
+        return cv2.blur(img, (ksize, ksize))
+
+    def filtro_promediador_pesado(self, img, ksize=3):
+        return cv2.boxFilter(img, -1, (ksize, ksize), normalize=False)
+
+    def filtro_mediana(self, img, ksize=3):
+        return cv2.medianBlur(img, ksize)
+
+    def filtro_bilateral(self, img, d=9, sigmaColor=75, sigmaSpace=75):
+        return cv2.bilateralFilter(img, d, sigmaColor, sigmaSpace)
+
+    def filtro_gaussiano(self, img, ksize=3, sigmaX=0):
+        return cv2.GaussianBlur(img, (ksize, ksize), sigmaX)

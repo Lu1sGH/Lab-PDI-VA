@@ -26,7 +26,7 @@ class App(cusTK.CTk):
         #Inicialización de la ventana principal
         self.title("Prototipo 1")
         self.geometry(f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}")
-        self.minsize(800, 600)
+        self.minsize(700, 600)
         self.resizable(True, True)
 
         #Inicialización de variables para la manipulación de imágenes
@@ -67,7 +67,7 @@ class App(cusTK.CTk):
         #Menu de color. Muestra opciones sobre el color de la imagen activa.
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", "Histograma Imagen Activa"],
+            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", "Umbralizar adaptativamente", "Histograma Imagen Activa"],
             command=self.color_action
         )
         self.operaciones_menu.set("Color")
@@ -76,7 +76,9 @@ class App(cusTK.CTk):
         #Menu de operaciones
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Suma", "Resta", "Multiplicación", "AND", "OR", "XOR", "Ecualizar Uniformemente", "Umbralizar adaptativamente"],
+            values=["Suma", "Resta", "Multiplicación", "AND", "OR", "XOR", "NOT", 
+                    "Ecualizar Uniformemente", "Ecualización Rayleigh", "Ecualización hipercúbica", 
+                    "Ecualización exponencial", "Ecualización logaritmo hiperbólica", "Expansión", "Contracción", "Corrección Gamma"],
             command=self.operaciones_action
         )
         self.operaciones_menu.set("Operaciones")
@@ -85,7 +87,9 @@ class App(cusTK.CTk):
         #Menu para filtros y ruido
         self.archivos_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Añadir ruido impulsivo", "Filtro Máximo", "Filtro Mínimo"],
+            values=["Añadir ruido impulsivo", "Añadir ruido Gaussiano", "Añadir ruido multiplicativo", 
+                    "Filtro Máximo", "Filtro Mínimo", "Filtro promediador", "Filtro primediador pesado", "Filtra mediana", 
+                    "Filtro bilateral", "Filtro Gaussiano"],
             command=self.filtros_action
         )
         self.archivos_menu.set("Filtros y ruido")
@@ -183,10 +187,12 @@ class App(cusTK.CTk):
                 resultado = self.op.mostrar_componentes_RGB(imagen=actual)
             elif choice == "Convertir a escala de grises":
                 resultado = self.op.aGris(imagen=actual)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
             elif choice == "Umbralizar":
                 self.elegir_umbral()
+            elif choice == "Umbralizar adaptativamente":
+                resultado = self.seg.umbralizacionAdaptativa(actual, kernel = self.kernel , c = self.c)
+                self.setResultado(resultado)
             elif choice == "Histograma Imagen Activa":
                 actual = self.obtener_imagen_actual()
                 self.op.mostrar_histograma(actual)
@@ -204,32 +210,47 @@ class App(cusTK.CTk):
             print(f"Operación seleccionada: {choice}")
             if choice == "Suma":
                 resultado = self.op.suma(valor = self.const, imagen=actual)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
             elif choice == "Resta":
                 resultado = self.op.resta(valor = self.const, imagen=actual)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
             elif choice == "Multiplicación":
                 resultado = self.op.multiplicacion(factor = self.const, imagen=actual)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
             elif choice == "AND" or choice == "OR" or choice == "XOR":
                 if self.imagen2 is None:
                     msg.alerta_message("Debe cargar dos imágenes para realizar operaciones lógicas.")
                     return
 
                 resultado = self.op._operacion_logica(self.imagen1, self.imagen2, choice)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
+            elif choice == "NOT":
+                resultado = self.op.negacion(actual)
+                self.setResultado(resultado)
             elif choice == "Ecualizar Uniformemente":
                 resultado = self.ec.ecualizar_uniformemente(actual)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
-            elif choice == "Umbralizar adaptativamente":
-                resultado = self.seg.umbralizacionAdaptativa(actual, kernel = self.kernel , c = self.c)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
+            elif choice == "Ecualización Rayleigh":
+                resultado = self.ec.rayleigh(actual)
+                self.setResultado(resultado)
+            elif choice == "Ecualización hipercúbica":
+                resultado = self.ec.hipercubica(actual)
+                self.setResultado(resultado)
+            elif choice == "Ecualización exponencial":
+                resultado = self.ec.exponencial(actual)
+                self.setResultado(resultado)
+            elif choice == "Ecualización logaritmo hiperbólica":
+                resultado = self.ec.logHiperbolica(actual)
+                self.setResultado(resultado)
+            elif choice == "Expansión":
+                resultado = self.ec.expansion(actual)
+                self.setResultado(resultado)
+            elif choice == "Contracción":
+                resultado = self.ec.contraccion(actual)
+                self.setResultado(resultado)
+            elif choice == "Corrección Gamma":
+                resultado = self.ec.correccionGamma(actual)
+                self.setResultado(resultado)
         except Exception as e:
             msg.error_message(f"Error en las operaciones: {str(e)}")
             print(f"Error al realizar la operación: {str(e)}")
@@ -243,16 +264,34 @@ class App(cusTK.CTk):
             
             if choice == "Añadir ruido impulsivo":
                 resultado = self.fyR.ruido_salPimienta(actual, p=0.02)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
+            elif choice == "Añadir ruido Gaussiano":
+                resultado = self.fyR.ruidoGaussiano(actual)
+                self.setResultado(resultado)
+            elif choice == "Añadir ruido multiplicativo":
+                resultado = self.fyR.ruidoMultiplicativo(actual)
+                self.setResultado(resultado)
             elif choice == "Filtro Máximo":
                 resultado = self.fyR.aplicar_filtro(actual, choice)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
             elif choice == "Filtro Mínimo":
                 resultado = self.fyR.aplicar_filtro(actual, choice)
-                self.resultado = resultado
-                self.mostrar_resultado(resultado)
+                self.setResultado(resultado)
+            elif choice == "Filtro promediador":
+                resultado = self.fyR.filtro_promediador(actual)
+                self.setResultado(resultado)
+            elif choice == "Filtro promediador pesado":
+                resultado = self.fyR.filtro_promediador_pesado(actual)
+                self.setResultado(resultado)
+            elif choice == "Filtro mediana":
+                resultado = self.fyR.filtro_mediana(actual)
+                self.setResultado(resultado)
+            elif choice == "Filtro bilateral":
+                resultado = self.fyR.filtro_bilateral(actual)
+                self.setResultado(resultado)
+            elif choice == "Filtro Gaussiano":
+                resultado = self.fyR.filtro_gaussiano(actual)
+                self.setResultado(resultado)
         except Exception as e:
             msg.error_message(f"Error al aplicar el filtro: {str(e)}")
             print(f"Error al aplicar el filtro: {str(e)}")
@@ -289,7 +328,7 @@ class App(cusTK.CTk):
         actual = self.obtener_imagen_actual()
         umbral = int(self.slider_umbral_popup.get())
         resultado = self.op.umbralizar(actual, umbral)
-        self.mostrar_resultado(resultado)
+        self.setResultado(resultado)
         self.ventana_umbral.destroy()
 
     def abrir_imagen(self): #Carga de imágenes
@@ -310,7 +349,8 @@ class App(cusTK.CTk):
             msg.error_message(f"Error al abrir la imagen: {str(e)}")
             print(f"Error al abrir la imagen: {str(e)}")
 
-    def mostrar_resultado(self, resultado): #Muestra el resultado de la operación en el frame de resultados
+    def setResultado(self, resultado): #Asigna y muestra el resultado de la operación en el frame de resultados
+        self.resultado = resultado #Asignación del resultado
         try:
             if resultado is not None:
                 resultado_pil = Image.fromarray(cv2.cvtColor(resultado, cv2.COLOR_BGR2RGB))
@@ -379,7 +419,7 @@ class App(cusTK.CTk):
                 self.mostrar_imagenes()
             elif self.imagen_actual == 3:
                 self.resultado = None
-                self.mostrar_resultado(None)
+                self.setResultado(None)
         except Exception as e:
             msg.error_message(f"Error al cerrar la imagen: {str(e)}")
             print(f"Error al cerrar la imagen: {str(e)}")

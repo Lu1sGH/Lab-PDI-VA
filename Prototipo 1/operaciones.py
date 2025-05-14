@@ -64,6 +64,15 @@ class Operaciones:
             msg.error_message(f"Error en la operación lógica {tipo}: {str(e)}")
             print(f"Error en la operación lógica: {str(e)}")
             return None
+        
+    def negacion(self, img):
+        try:
+            return cv2.bitwise_not(img)
+        except Exception as e:
+            msg.error_message(f"Error en la negación: {str(e)}")
+            print(f"Error en bitwise_not: {str(e)}")
+            return None
+
 
     def mostrar_histograma(self, imagen=None):
         try:
