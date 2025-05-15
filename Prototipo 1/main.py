@@ -13,8 +13,10 @@ import cv2
 #Librerias para PDI
 from ecualizacion import Ecualizador
 from operaciones import Operaciones
-from FiltrosRuido import FiltrosYRuido
+from Ruido import Ruido
+from Filtros_PB_NL import Filtros_PasoBajas_NoLineales
 from Segmentacion import Segmentacion
+from Filtros_PA import Filtros_Paso_Altas
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -32,15 +34,17 @@ class App(cusTK.CTk):
         #Inicialización de variables para la manipulación de imágenes
         self.op = Operaciones() #Instancia de la clase de operaciones
         self.ec = Ecualizador() #Instancia de la clase de ecualización
-        self.fyR = FiltrosYRuido() #Instancia de la clase de filtros y ruido
+        self.ruido = Ruido() #Instancia de la clase para añadir ruido
+        self.fPBNL = Filtros_PasoBajas_NoLineales() #Instancia de la clase de filtros paso bajas y no lineales
+        self.fPA = Filtros_Paso_Altas() #Instancia de la clase de filtros paso altas
         self.seg = Segmentacion() #Instancia de la clase de segmentación
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
         self.imagen_actual = 1  #Elige cual es la imagen que se va a operar. Por defecto, operar con la imagen 1
-        self.kernel = 3 #Tamaño kernel
-        self.c = 0 #C para umbralización adaptativa
-        self.const = 0 #Constante para operaciones aritmeticas
+        self.t_kernel = 3 #Tamaño kernel
+        self.c = 0 #C para umbralización adaptativa (mean-C)
+        self.const = 0 #Constante para operaciones aritmeticas y No. max de segmentos
         
         #Barra superior
         self.top_bar = cusTK.CTkFrame(self, height=50)
@@ -67,7 +71,7 @@ class App(cusTK.CTk):
         #Menu de color. Muestra opciones sobre el color de la imagen activa.
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", "Umbralizar adaptativamente", "Histograma Imagen Activa"],
+            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", "Umbralizar adaptativamente", "Umbralizar adaptativamente por segmentación", "Histograma Imagen Activa"],
             command=self.color_action
         )
         self.operaciones_menu.set("Color")
@@ -88,8 +92,8 @@ class App(cusTK.CTk):
         self.archivos_menu = cusTK.CTkOptionMenu(
             self.top_bar,
             values=["Añadir ruido impulsivo", "Añadir ruido Gaussiano", "Añadir ruido multiplicativo", 
-                    "Filtro Máximo", "Filtro Mínimo", "Filtro promediador", "Filtro primediador pesado", "Filtra mediana", 
-                    "Filtro bilateral", "Filtro Gaussiano"],
+                    "Filtro Máximo", "Filtro Mínimo", "Filtro promediador", "Filtro promediador pesado", "Filtro mediana", 
+                    "Filtro bilateral", "Filtro Gaussiano", "Filtro de Canny"],
             command=self.filtros_action
         )
         self.archivos_menu.set("Filtros y ruido")
@@ -191,7 +195,10 @@ class App(cusTK.CTk):
             elif choice == "Umbralizar":
                 self.elegir_umbral()
             elif choice == "Umbralizar adaptativamente":
-                resultado = self.seg.umbralizacionAdaptativa(actual, kernel = self.kernel , c = self.c)
+                resultado = self.seg.umbralizacionAdaptativa(actual, kernel = self.t_kernel , c = self.c)
+                self.setResultado(resultado)
+            elif choice == "Umbralizar adaptativamente por segmentación":
+                resultado = self.seg.umbraladoSegmentacion(actual, self.const)
                 self.setResultado(resultado)
             elif choice == "Histograma Imagen Activa":
                 actual = self.obtener_imagen_actual()
@@ -263,34 +270,37 @@ class App(cusTK.CTk):
                 return
             
             if choice == "Añadir ruido impulsivo":
-                resultado = self.fyR.ruido_salPimienta(actual, p=0.02)
+                resultado = self.ruido.ruido_salPimienta(actual, p=0.02)
                 self.setResultado(resultado)
             elif choice == "Añadir ruido Gaussiano":
-                resultado = self.fyR.ruidoGaussiano(actual)
+                resultado = self.ruido.ruidoGaussiano(actual)
                 self.setResultado(resultado)
             elif choice == "Añadir ruido multiplicativo":
-                resultado = self.fyR.ruidoMultiplicativo(actual)
+                resultado = self.ruido.ruidoMultiplicativo(actual)
                 self.setResultado(resultado)
             elif choice == "Filtro Máximo":
-                resultado = self.fyR.aplicar_filtro(actual, choice)
+                resultado = self.fPBNL.aplicar_filtro(actual, choice)
                 self.setResultado(resultado)
             elif choice == "Filtro Mínimo":
-                resultado = self.fyR.aplicar_filtro(actual, choice)
+                resultado = self.fPBNL.aplicar_filtro(actual, choice)
                 self.setResultado(resultado)
             elif choice == "Filtro promediador":
-                resultado = self.fyR.filtro_promediador(actual)
+                resultado = self.fPBNL.filtro_promediador(actual, ksize = self.t_kernel)
                 self.setResultado(resultado)
             elif choice == "Filtro promediador pesado":
-                resultado = self.fyR.filtro_promediador_pesado(actual)
+                resultado = self.fPBNL.filtro_promediador_pesado(actual)
                 self.setResultado(resultado)
             elif choice == "Filtro mediana":
-                resultado = self.fyR.filtro_mediana(actual)
+                resultado = self.fPBNL.filtro_mediana(actual, ksize = self.t_kernel)
                 self.setResultado(resultado)
             elif choice == "Filtro bilateral":
-                resultado = self.fyR.filtro_bilateral(actual)
+                resultado = self.fPBNL.filtro_bilateral(actual)
                 self.setResultado(resultado)
             elif choice == "Filtro Gaussiano":
-                resultado = self.fyR.filtro_gaussiano(actual)
+                resultado = self.fPBNL.filtro_gaussiano(actual, ksize = self.t_kernel)
+                self.setResultado(resultado)
+            elif choice == "Filtro de Canny":
+                resultado = self.fPA.Canny(actual)
                 self.setResultado(resultado)
         except Exception as e:
             msg.error_message(f"Error al aplicar el filtro: {str(e)}")
@@ -438,7 +448,7 @@ class App(cusTK.CTk):
                 if kernel % 2 != 1:
                     msg.alerta_message("El tamaño del kernel tiene que ser un número impar.")
                 else:
-                    self.kernel = kernel
+                    self.t_kernel = kernel
                     self.c = c
                     self.const = const
                     popupC.destroy()
@@ -449,14 +459,14 @@ class App(cusTK.CTk):
         cusTK.CTkLabel(popupC, text="Tamaño del kernel:").pack(pady=(20, 5))
         entrada1 = cusTK.CTkEntry(popupC)
         entrada1.pack(pady=5)
-        entrada1.insert(0, str(self.kernel))
+        entrada1.insert(0, str(self.t_kernel))
 
         cusTK.CTkLabel(popupC, text="C para umbralizacion adaptativa:").pack(pady=5)
         entrada2 = cusTK.CTkEntry(popupC)
         entrada2.pack(pady=5)
         entrada2.insert(0, str(self.c))
 
-        cusTK.CTkLabel(popupC, text="Cons para operaciones aritméticas:").pack(pady=5)
+        cusTK.CTkLabel(popupC, text="Constante para operaciones aritméticas \no número máximo de segmentos:").pack(pady=5)
         entrada3 = cusTK.CTkEntry(popupC)
         entrada3.pack(pady=5)
         entrada3.insert(0, str(self.const))
