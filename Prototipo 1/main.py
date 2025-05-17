@@ -188,7 +188,6 @@ class App(cusTK.CTk):
                 msg.alerta_message("No se ha cargado una imagen.")
                 return
             
-            print(f"Operación seleccionada: {choice}")
             if choice == "Canales RGB":
                 resultado = self.op.mostrar_componentes_RGB(imagen=actual)
             elif choice == "Convertir a escala de grises":
@@ -216,7 +215,6 @@ class App(cusTK.CTk):
                 msg.alerta_message("No se ha cargado una imagen.")
                 return
             
-            print(f"Operación seleccionada: {choice}")
             if choice == "Suma":
                 resultado = self.op.suma(valor = self.const, imagen=actual)
                 self.setResultado(resultado)
