@@ -95,17 +95,17 @@ class Filtros_Paso_Altas:
                         img[i,j] = 0
         return img
 
-    def Canny(self, img, kernel = 5):
+    def Canny(self, img, kernel = 5, sig = 1.4):
         try:
             if len(img.shape) == 3:
                 msg.alerta_message("El método solo admite imágenes en escala de grises")
                 return None
 
-            blurred = self.gaussian_blur(img, kernel_size=kernel)
+            blurred = self.gaussian_blur(img, kernel_size=kernel, sigma = sig)
             g, theta = self.sobel_filters(blurred)
             nms = self.non_maximum_suppression(g, theta)
-            thresh, weak, strong = self.double_threshold_manual(nms, 70, 75)
-            bordes = self.hysteresis(thresh, weak, strong)
+            thresh, debil, fuerte = self.double_threshold_manual(nms, 70, 75)
+            bordes = self.hysteresis(thresh, debil, strong = fuerte)
 
             return bordes
         except Exception as e:

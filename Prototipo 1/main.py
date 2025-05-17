@@ -44,8 +44,10 @@ class App(cusTK.CTk):
         self.imagen_actual = 1  #Elige cual es la imagen que se va a operar. Por defecto, operar con la imagen 1
         self.t_kernel = 3 #Tamaño kernel
         self.c = 0 #C para umbralización adaptativa (mean-C)
-        self.const = 0 #Constante para operaciones aritmeticas y No. max de segmentos
-        
+        self.const = 0 #Constante para operaciones aritmeticas. También para fil promedio pesado
+        self.maxSeg = 0 #Constante para número máximo de segmentos en umbralizado por segmentación.
+        self.sigma = 0.75 #Constante para filtros Gaussianos.
+
         #Barra superior
         self.top_bar = cusTK.CTkFrame(self, height=50)
         self.top_bar.pack(side="top", fill="x")
@@ -198,7 +200,7 @@ class App(cusTK.CTk):
                 resultado = self.seg.umbralizacionAdaptativa(actual, kernel = self.t_kernel , c = self.c)
                 self.setResultado(resultado)
             elif choice == "Umbralizar adaptativamente por segmentación":
-                resultado = self.seg.umbraladoSegmentacion(actual, self.const)
+                resultado = self.seg.umbraladoSegmentacion(actual, self.maxSeg)
                 self.setResultado(resultado)
             elif choice == "Histograma Imagen Activa":
                 actual = self.obtener_imagen_actual()
@@ -273,7 +275,7 @@ class App(cusTK.CTk):
                 resultado = self.ruido.ruido_salPimienta(actual, p=0.02)
                 self.setResultado(resultado)
             elif choice == "Añadir ruido Gaussiano":
-                resultado = self.ruido.ruidoGaussiano(actual)
+                resultado = self.ruido.ruidoGaussiano(actual, desEs = self.sigma)
                 self.setResultado(resultado)
             elif choice == "Añadir ruido multiplicativo":
                 resultado = self.ruido.ruidoMultiplicativo(actual)
@@ -288,7 +290,7 @@ class App(cusTK.CTk):
                 resultado = self.fPBNL.filtro_promediador(actual, ksize = self.t_kernel)
                 self.setResultado(resultado)
             elif choice == "Filtro promediador pesado":
-                resultado = self.fPBNL.filtro_promediador_pesado(actual)
+                resultado = self.fPBNL.filtro_promediador_pesado(actual, N = self.const)
                 self.setResultado(resultado)
             elif choice == "Filtro mediana":
                 resultado = self.fPBNL.filtro_mediana(actual, ksize = self.t_kernel)
@@ -297,10 +299,10 @@ class App(cusTK.CTk):
                 resultado = self.fPBNL.filtro_bilateral(actual)
                 self.setResultado(resultado)
             elif choice == "Filtro Gaussiano":
-                resultado = self.fPBNL.filtro_gaussiano(actual, ksize = self.t_kernel)
+                resultado = self.fPBNL.filtro_gaussiano(actual, ksize = self.t_kernel, sigmaX = self.sigma)
                 self.setResultado(resultado)
             elif choice == "Filtro de Canny":
-                resultado = self.fPA.Canny(actual)
+                resultado = self.fPA.Canny(actual, sig = self.sigma)
                 self.setResultado(resultado)
         except Exception as e:
             msg.error_message(f"Error al aplicar el filtro: {str(e)}")
@@ -437,7 +439,7 @@ class App(cusTK.CTk):
     def setConstantes(self): #Método para ajustar constantes
         popupC = cusTK.CTkToplevel(self)#Crear ventana emergente
         popupC.title("Ajustar constantes")
-        popupC.geometry("300x300")
+        popupC.geometry("300x450")
         popupC.grab_set()  #Hace modal la ventana
 
         def aceptar():
@@ -445,12 +447,16 @@ class App(cusTK.CTk):
                 kernel = int(entrada1.get())
                 c = int(entrada2.get())
                 const = int(entrada3.get())
+                segmentos = int(entrada4.get())
+                desEst = float(entrada5.get())
                 if kernel % 2 != 1:
                     msg.alerta_message("El tamaño del kernel tiene que ser un número impar.")
                 else:
                     self.t_kernel = kernel
                     self.c = c
                     self.const = const
+                    self.maxSeg = segmentos
+                    self.sigma = desEst
                     popupC.destroy()
             except ValueError:
                 msg.alerta_message("Por favor, ingrese solo números.")
@@ -466,10 +472,20 @@ class App(cusTK.CTk):
         entrada2.pack(pady=5)
         entrada2.insert(0, str(self.c))
 
-        cusTK.CTkLabel(popupC, text="Constante para operaciones aritméticas \no número máximo de segmentos:").pack(pady=5)
+        cusTK.CTkLabel(popupC, text="Constante para operaciones aritméticas \ny filtro promediador pesado:").pack(pady=5)
         entrada3 = cusTK.CTkEntry(popupC)
         entrada3.pack(pady=5)
         entrada3.insert(0, str(self.const))
+
+        cusTK.CTkLabel(popupC, text="Número máximo de segmentos:").pack(pady=5)
+        entrada4 = cusTK.CTkEntry(popupC)
+        entrada4.pack(pady=5)
+        entrada4.insert(0, str(self.maxSeg))
+
+        cusTK.CTkLabel(popupC, text="Sigma:").pack(pady=5)
+        entrada5 = cusTK.CTkEntry(popupC)
+        entrada5.pack(pady=5)
+        entrada5.insert(0, str(self.sigma))
 
         cusTK.CTkButton(popupC, text="Aceptar", command=aceptar).pack(pady=15)
 

@@ -85,8 +85,8 @@ class Filtros_PasoBajas_NoLineales:
     def filtro_promediador(self, img, ksize=3):
         return cv2.blur(img, (ksize, ksize))
 
-    def filtro_promediador_pesado(self, img):
-        kernel = np.array([[1,1,1],[1,5,1],[1,1,1]]) / 13
+    def filtro_promediador_pesado(self, img, N = 5):
+        kernel = np.array([[1,1,1],[1,N,1],[1,1,1]]) / (8 + N)
         filtrada = cv2.filter2D(img, -1, kernel=kernel)
         return filtrada
 
