@@ -18,6 +18,15 @@ class Filtros_Paso_Altas:
         Ky = np.array([[1, 2, 1],
                     [0, 0, 0],
                     [-1, -2, -1]], dtype=np.float32)
+        """"Kernels de Scharr (Alternativos a Sobel). Más precisos para bordes.
+        Kx = np.array([[-3, 0, 3],
+                    [-10, 0, 10],
+                    [-3, 0, 3]], dtype=np.float32)
+        Ky = np.array([[3, 10, 3],
+                    [0, 0, 0],
+                    [-3, -10, -3]], dtype=np.float32)
+        """
+
         # Convoluciona la imagen con los kernels para obtener las derivadas
         Ix = cv2.filter2D(img, cv2.CV_32F, Kx)
         Iy = cv2.filter2D(img, cv2.CV_32F, Ky)
@@ -105,6 +114,7 @@ class Filtros_Paso_Altas:
             g, theta = self.sobel_filters(blurred)
             nms = self.non_maximum_suppression(g, theta)
             thresh, debil, fuerte = self.double_threshold_manual(nms, 70, 75)
+            #if(True): return cv2.Canny(thresh, debil, fuerte, apertureSize=kernel, L2gradient=True)
             bordes = self.hysteresis(thresh, debil, strong = fuerte)
 
             return bordes
