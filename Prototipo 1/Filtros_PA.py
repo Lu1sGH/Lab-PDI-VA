@@ -99,7 +99,7 @@ class Filtros_Paso_Altas:
         try:
             if len(img.shape) == 3:
                 msg.alerta_message("El método solo admite imágenes en escala de grises")
-                return None
+                return img
 
             blurred = self.gaussian_blur(img, kernel_size=kernel, sigma = sig)
             g, theta = self.sobel_filters(blurred)

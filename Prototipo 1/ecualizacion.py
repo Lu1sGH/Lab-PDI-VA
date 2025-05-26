@@ -8,7 +8,7 @@ class Ecualizador:
         try:
             if(len(imagen.shape) == 3):
                 msg.alerta_message("El método no admite imágenes a color.")
-                return None
+                return imagen
 
             g_min = 0
             g_max = 255
