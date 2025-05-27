@@ -6,6 +6,9 @@ import Messages as msg
 class Operaciones:
     def aGris(self, imagen=None):
         try:
+            if len(imagen.shape) == 2:
+                return imagen
+            
             return cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
         except Exception as e:
             msg.error_message(f"Error al convertir a escala de grises: {str(e)}")
@@ -22,25 +25,46 @@ class Operaciones:
             print(f"Error al umbralizar la imagen: {str(e)}")
             return None
 
-    def suma(self, valor=50, imagen=None):
+    def suma(self, img1=None, img2 = 50):
         try:
-            return cv2.add(imagen, valor)
+            if type(img2) is not int and type(img2) is not float: #Si la imagen 2 no es un número, sino una imagen
+                fil, col = img1.shape[:2]
+                fil2, col2 = img2.shape[:2]
+
+                if fil != fil2 or col != col2:
+                    img2 = cv2.resize(img2, (col, fil))
+
+            return cv2.add(img1, img2)
         except Exception as e:
             msg.error_message(f"Error al sumar valor a la imagen: {str(e)}")
             print(f"Error al sumar valor a la imagen: {str(e)}")
             return None
 
-    def resta(self, valor=50, imagen=None):
+    def resta(self, img1=None, img2 = 50):
         try:
-            return cv2.subtract(imagen, valor)
+            if type(img2) is not int and type(img2) is not float: #Si la imagen 2 no es un número, sino una imagen
+                fil, col = img1.shape[:2]
+                fil2, col2 = img2.shape[:2]
+
+                if fil != fil2 or col != col2:
+                    img2 = cv2.resize(img2, (col, fil))
+
+            return cv2.subtract(img1, img2)
         except Exception as e:
             msg.error_message(f"Error al restar valor a la imagen: {str(e)}")
             print(f"Error al restar valor a la imagen: {str(e)}")
             return None
 
-    def multiplicacion(self, factor=1.2, imagen=None):
-        try: 
-            return cv2.multiply(imagen, factor)
+    def multiplicacion(self, img1=None, img2 = 1.2):
+        try:
+            if type(img2) is not int and type(img2) is not float: #Si la imagen 2 no es un número, sino una imagen
+                fil, col = img1.shape[:2]
+                fil2, col2 = img2.shape[:2]
+
+                if fil != fil2 or col != col2:
+                    img2 = cv2.resize(img2, (col, fil))
+            
+            return cv2.multiply(img1, img2)
         except Exception as e:
             msg.error_message(f"Error al multiplicar la imagen: {str(e)}")
             print(f"Error al multiplicar la imagen: {str(e)}")

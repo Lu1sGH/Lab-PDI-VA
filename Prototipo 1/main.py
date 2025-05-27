@@ -1,13 +1,17 @@
-#paquetes para descargar
-#pip install numpy matplotlib opencv-python, customtkinter
+"""
+PAQUETES A INSTALAR:
+pip install numpy, matplotlib, opencv-python, customtkinter, CTkMessagebox
+"""
 
 #Librearias para la interfaz grafica
 import customtkinter as cusTK
 from customtkinter import CTkImage
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import Messages as msg #Libreria (de creación propia) para mensajes de error y alerta
+import PilaCambios as Cambios #Librería (de creación propia) para deshacer cambios a la imagen resultado
 import cv2
 
 #Librerias para PDI
@@ -20,17 +24,18 @@ from Filtros_PA import Filtros_Paso_Altas
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
+fuente_global = ("Segoe UI", 13, "bold") #Fuente para todos los botones de la aplicación
 
 class App(cusTK.CTk):
     def __init__(self):
         super().__init__()
-
+        
         #Inicialización de la ventana principal
         self.title("Prototipo 1")
         self.geometry(f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}")
         self.minsize(700, 600)
         self.resizable(True, True)
-
+        
         #Inicialización de variables para la manipulación de imágenes
         self.op = Operaciones() #Instancia de la clase de operaciones
         self.ec = Ecualizador() #Instancia de la clase de ecualización
@@ -41,6 +46,7 @@ class App(cusTK.CTk):
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
+        self.cambios = Cambios.PilaCambios() #Instancia de la clase para deshacer cambios
         self.imagen_actual = 1  #Elige cual es la imagen que se va a operar. Por defecto, operar con la imagen 1
         self.t_kernel = 3 #Tamaño kernel
         self.c = 0 #C para umbralización adaptativa (mean-C)
@@ -56,7 +62,8 @@ class App(cusTK.CTk):
         self.archivos_menu = cusTK.CTkOptionMenu(
             self.top_bar,
             values=["Abrir Imagen", "Guardar Imagen Activa", "Cerrar Imagen Activa"],
-            command=self.archivos_action
+            command=self.archivos_action,
+            font=fuente_global
         )
         self.archivos_menu.set("Archivos")
         self.archivos_menu.pack(side="left", padx=10, pady=10)
@@ -65,7 +72,8 @@ class App(cusTK.CTk):
         self.selector_menu = cusTK.CTkOptionMenu(
             self.top_bar,
             values=["Imagen 1", "Imagen 2", "Imagen 3 (Resultado)"],
-            command=self.cambiar_imagen_actual
+            command=self.cambiar_imagen_actual,
+            font=fuente_global
         )
         self.selector_menu.set("Elegir imagen activa")
         self.selector_menu.pack(side="left", padx=10, pady=10)
@@ -73,8 +81,9 @@ class App(cusTK.CTk):
         #Menu de color. Muestra opciones sobre el color de la imagen activa.
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", "Umbralizar adaptativamente", "Umbralizar adaptativamente por segmentación", "Histograma Imagen Activa"],
-            command=self.color_action
+            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", "Umbralizar adaptativamente \npor propiedades locales", "Umbralizar adaptativamente \npor partición", "Histograma Imagen Activa"],
+            command=self.color_action,
+            font=fuente_global
         )
         self.operaciones_menu.set("Color")
         self.operaciones_menu.pack(side="left", padx=10, pady=10)
@@ -85,7 +94,8 @@ class App(cusTK.CTk):
             values=["Suma", "Resta", "Multiplicación", "AND", "OR", "XOR", "NOT", 
                     "Ecualizar Uniformemente", "Ecualización Rayleigh", "Ecualización hipercúbica", 
                     "Ecualización exponencial", "Ecualización logaritmo hiperbólica", "Expansión", "Contracción", "Corrección Gamma"],
-            command=self.operaciones_action
+            command=self.operaciones_action,
+            font=fuente_global
         )
         self.operaciones_menu.set("Operaciones")
         self.operaciones_menu.pack(side="left", padx=10, pady=10)
@@ -96,17 +106,22 @@ class App(cusTK.CTk):
             values=["Añadir ruido impulsivo", "Añadir ruido Gaussiano", "Añadir ruido multiplicativo", 
                     "Filtro Máximo", "Filtro Mínimo", "Filtro promediador", "Filtro promediador pesado", "Filtro mediana", 
                     "Filtro bilateral", "Filtro Gaussiano", "Filtro de Canny"],
-            command=self.filtros_action
+            command=self.filtros_action,
+            font=fuente_global
         )
         self.archivos_menu.set("Filtros y ruido")
         self.archivos_menu.pack(side="left", padx=10, pady=10)
 
         #Botón para ajustar constantes
-        self.cons_boton = cusTK.CTkButton(self.top_bar, text="Ajustar constantes", command=self.setConstantes)
+        self.cons_boton = cusTK.CTkButton(self.top_bar, text="Ajustar constantes", command=self.setConstantes, font=fuente_global)
         self.cons_boton.pack(side="left", padx=10, pady=10)
 
+        #Boton para deshacer cambios
+        self.deshacer_boton = cusTK.CTkButton(self.top_bar, text="Deshacer", command=self.deshacerCambios, font=fuente_global, width=30)
+        self.deshacer_boton.pack(side="left", padx=10, pady=10)
+
         #Botón para cambiar entre modo claro y oscuro
-        self.toggle_button = cusTK.CTkButton(self.top_bar, text="Modo oscuro", command=self.toggle_theme)
+        self.toggle_button = cusTK.CTkButton(self.top_bar, text="Modo oscuro", command=self.toggle_theme, font=fuente_global)
         self.toggle_button.pack(side="right", padx=10, pady=10)
 
         #Parte principal (contenedor de imágenes y resultados)
@@ -150,6 +165,10 @@ class App(cusTK.CTk):
             msg.error_message(f"Error al cambiar el tema: {str(e)}")
             print(f"Error al cambiar el tema: {str(e)}")
 
+    def deshacerCambios(self):
+        des = self.cambios.deshacer()
+        self.setResultado(des, esDesCambio = True)
+
     def cambiar_imagen_actual(self, seleccion):
         if seleccion == "Imagen 1":
             self.imagen_actual = 1
@@ -188,6 +207,9 @@ class App(cusTK.CTk):
                 msg.alerta_message("No se ha cargado una imagen.")
                 return
             
+            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+                self.cambios.guardar(self.resultado.copy())
+            
             if choice == "Canales RGB":
                 resultado = self.op.mostrar_componentes_RGB(imagen=actual)
             elif choice == "Convertir a escala de grises":
@@ -195,10 +217,10 @@ class App(cusTK.CTk):
                 self.setResultado(resultado)
             elif choice == "Umbralizar":
                 self.elegir_umbral()
-            elif choice == "Umbralizar adaptativamente":
+            elif choice == "Umbralizar adaptativamente \npor propiedades locales":
                 resultado = self.seg.umbralizacionAdaptativa(actual, kernel = self.t_kernel , c = self.c)
                 self.setResultado(resultado)
-            elif choice == "Umbralizar adaptativamente por segmentación":
+            elif choice == "Umbralizar adaptativamente \npor partición":
                 resultado = self.seg.umbraladoSegmentacion(actual, self.maxSeg)
                 self.setResultado(resultado)
             elif choice == "Histograma Imagen Activa":
@@ -215,14 +237,17 @@ class App(cusTK.CTk):
                 msg.alerta_message("No se ha cargado una imagen.")
                 return
             
+            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+                self.cambios.guardar(self.resultado.copy())
+
             if choice == "Suma":
-                resultado = self.op.suma(valor = self.const, imagen=actual)
+                resultado = self.op.suma(img1 = self.imagen1, img2 = self.const if self.imagen2 is None else self.imagen2)
                 self.setResultado(resultado)
             elif choice == "Resta":
-                resultado = self.op.resta(valor = self.const, imagen=actual)
+                resultado = self.op.resta(img1 = self.imagen1, img2 = self.const if self.imagen2 is None else self.imagen2)
                 self.setResultado(resultado)
             elif choice == "Multiplicación":
-                resultado = self.op.multiplicacion(factor = self.const, imagen=actual)
+                resultado = self.op.multiplicacion(img1 = self.imagen1, img2 = self.const if self.imagen2 is None else self.imagen2)
                 self.setResultado(resultado)
             elif choice == "AND" or choice == "OR" or choice == "XOR":
                 if self.imagen2 is None:
@@ -269,6 +294,9 @@ class App(cusTK.CTk):
                 msg.alerta_message("No se ha cargado una imagen.")
                 return
             
+            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+                self.cambios.guardar(self.resultado.copy())
+
             if choice == "Añadir ruido impulsivo":
                 resultado = self.ruido.ruido_salPimienta(actual, p=0.02)
                 self.setResultado(resultado)
@@ -359,7 +387,7 @@ class App(cusTK.CTk):
             msg.error_message(f"Error al abrir la imagen: {str(e)}")
             print(f"Error al abrir la imagen: {str(e)}")
 
-    def setResultado(self, resultado): #Asigna y muestra el resultado de la operación en el frame de resultados
+    def setResultado(self, resultado, esDesCambio = False): #Asigna y muestra el resultado de la operación en el frame de resultados
         self.resultado = resultado #Asignación del resultado
         try:
             if resultado is not None:
@@ -367,6 +395,7 @@ class App(cusTK.CTk):
                 resultado_pil.thumbnail((700, 700))
                 tk_resultado = CTkImage(dark_image=resultado_pil, size=resultado_pil.size)
                 self.resultadoLabel.configure(image=tk_resultado)
+                self.cambios.guardar(resultado.copy()) if not esDesCambio else None 
             else:
                 tk_resultado = None
                 self.resultadoLabel.configure(image=None)
