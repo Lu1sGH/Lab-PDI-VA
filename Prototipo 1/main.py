@@ -21,6 +21,7 @@ from Ruido import Ruido
 from Filtros_PB_NL import Filtros_PasoBajas_NoLineales
 from Segmentacion import Segmentacion
 from Filtros_PA import Filtros_Paso_Altas
+from Conteo import Conteo
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -43,6 +44,7 @@ class App(cusTK.CTk):
         self.fPBNL = Filtros_PasoBajas_NoLineales() #Instancia de la clase de filtros paso bajas y no lineales
         self.fPA = Filtros_Paso_Altas() #Instancia de la clase de filtros paso altas
         self.seg = Segmentacion() #Instancia de la clase de segmentación
+        self.conteo = Conteo() #Instancia de la clase de conteo de objetos
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
@@ -81,11 +83,13 @@ class App(cusTK.CTk):
         #Menu de color. Muestra opciones sobre el color de la imagen activa.
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", "Umbralizar adaptativamente \npor propiedades locales", "Umbralizar adaptativamente \npor partición", "Histograma Imagen Activa"],
+            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", 
+                    "Umbralizar adaptativamente \npor propiedades locales", "Umbralizar adaptativamente \npor partición", 
+                    "Histograma Imagen Activa", "Contar Objetos"],
             command=self.color_action,
             font=fuente_global
         )
-        self.operaciones_menu.set("Color")
+        self.operaciones_menu.set("Colores y objetos")
         self.operaciones_menu.pack(side="left", padx=10, pady=10)
 
         #Menu de operaciones
@@ -224,8 +228,9 @@ class App(cusTK.CTk):
                 resultado = self.seg.umbraladoSegmentacion(actual, self.maxSeg)
                 self.setResultado(resultado)
             elif choice == "Histograma Imagen Activa":
-                actual = self.obtener_imagen_actual()
                 self.op.mostrar_histograma(actual)
+            elif choice == "Contar Objetos":
+                self.conteo.conteoCompleto(actual)
         except Exception as e:
             msg.error_message(f"Error en las opciones de color: {str(e)}")
             print(f"Error en las opciones de color: {str(e)}")

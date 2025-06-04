@@ -27,7 +27,7 @@ class Ecualizador:
 
     #Otras ecualizaciones
 
-    def correccionGamma(self, img, gamma = 1.0):
+    def correccionGamma(self, img, gamma = 1.3):
         try:
             if(len(img.shape) == 3):
                 msg.alerta_message("El método no admite imágenes a color. La imagen se convertirá a grises para su uso.")
