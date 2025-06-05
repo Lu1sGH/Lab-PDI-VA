@@ -52,7 +52,7 @@ class App(cusTK.CTk):
         self.imagen_actual = 1  #Elige cual es la imagen que se va a operar. Por defecto, operar con la imagen 1
         self.t_kernel = 3 #Tamaño kernel
         self.c = 0 #C para umbralización adaptativa (mean-C)
-        self.const = 0 #Constante para operaciones aritmeticas. También para fil promedio pesado
+        self.const = 0 #Constante para operaciones aritmeticas. También para fil promedio pesado y corrección gamma.
         self.maxSeg = 0 #Constante para número máximo de segmentos en umbralizado por segmentación.
         self.sigma = 0.75 #Constante para filtros Gaussianos.
 
@@ -296,7 +296,7 @@ class App(cusTK.CTk):
                 resultado = self.ec.contraccion(actual)
                 self.setResultado(resultado)
             elif choice == "Corrección Gamma":
-                resultado = self.ec.correccionGamma(actual)
+                resultado = self.ec.correccionGamma(actual, gamma=self.const)
                 self.setResultado(resultado)
             elif choice == "Ecualización Adaptativa":
                 resultado = self.ec.ecualizacionAdaptativa(actual)
@@ -491,7 +491,7 @@ class App(cusTK.CTk):
             try:
                 kernel = int(entrada1.get())
                 c = int(entrada2.get())
-                const = int(entrada3.get())
+                const = float(entrada3.get())
                 segmentos = int(entrada4.get())
                 desEst = float(entrada5.get())
                 if kernel % 2 != 1:
@@ -517,7 +517,7 @@ class App(cusTK.CTk):
         entrada2.pack(pady=5)
         entrada2.insert(0, str(self.c))
 
-        cusTK.CTkLabel(popupC, text="Constante para operaciones aritméticas \ny filtro promediador pesado:").pack(pady=5)
+        cusTK.CTkLabel(popupC, text="Constante para operaciones aritméticas,\n filtro promediador pesado y corrección gamma:").pack(pady=5)
         entrada3 = cusTK.CTkEntry(popupC)
         entrada3.pack(pady=5)
         entrada3.insert(0, str(self.const))
