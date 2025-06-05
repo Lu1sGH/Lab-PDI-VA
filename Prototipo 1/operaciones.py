@@ -5,6 +5,7 @@ import Messages as msg
 
 class Operaciones:
     def aGris(self, imagen=None):
+        """Convierte una imagen a escala de grises."""
         try:
             if len(imagen.shape) == 2:
                 return imagen
@@ -16,6 +17,7 @@ class Operaciones:
             return None
     
     def umbralizar(self, image, umbral):
+        """Aplica un umbral a la imagen para convertirla en binaria."""
         try:
             #Umbralización para binarizar la imagen
             _, binary_image = cv2.threshold(image, umbral, 255, cv2.THRESH_BINARY)
@@ -26,6 +28,7 @@ class Operaciones:
             return None
 
     def suma(self, img1=None, img2 = 50):
+        """Suma un valor o una imagen a otra imagen."""
         try:
             if type(img2) is not int and type(img2) is not float: #Si la imagen 2 no es un número, sino una imagen
                 fil, col = img1.shape[:2]
@@ -41,6 +44,7 @@ class Operaciones:
             return None
 
     def resta(self, img1=None, img2 = 50):
+        """Resta un valor o una imagen a otra imagen."""
         try:
             if type(img2) is not int and type(img2) is not float: #Si la imagen 2 no es un número, sino una imagen
                 fil, col = img1.shape[:2]
@@ -56,6 +60,7 @@ class Operaciones:
             return None
 
     def multiplicacion(self, img1=None, img2 = 1.2):
+        """Multiplica un valor o una imagen a otra imagen."""
         try:
             if type(img2) is not int and type(img2) is not float: #Si la imagen 2 no es un número, sino una imagen
                 fil, col = img1.shape[:2]
@@ -71,12 +76,13 @@ class Operaciones:
             return None
 
     def _operacion_logica(self, img1, img2, tipo):
+        """Realiza una operación lógica entre dos imágenes."""
         try: 
             fil, col = img1.shape[:2]
             fil2, col2 = img2.shape[:2]
 
             if fil != fil2 or col != col2:
-                img2 = cv2.resize(img2, (col, fil))
+                img2 = cv2.resize(img2, (col, fil)) #Se ajusta el tamaño de la imagen 2 para que coincida con la imagen 1
 
             if tipo == 'AND':
                 return cv2.bitwise_and(img1, img2)
@@ -90,6 +96,7 @@ class Operaciones:
             return None
         
     def negacion(self, img):
+        """Realiza la operacion NOT sobre una imagen."""
         try:
             return cv2.bitwise_not(img)
         except Exception as e:
@@ -97,8 +104,8 @@ class Operaciones:
             print(f"Error en bitwise_not: {str(e)}")
             return None
 
-
     def mostrar_histograma(self, imagen=None):
+        """Muestra el histograma de una imagen en escala de grises y en color (si es aplicable)."""
         try:
             #Mostrar histograma de la imagen en escala de grises
             plt.figure()  #Crea una nueva ventana para el histograma en escala de grises
@@ -126,6 +133,7 @@ class Operaciones:
             print(f"Error al mostrar el histograma: {str(e)}")
 
     def mostrar_componentes_RGB(self, imagen=None):
+        """Muestra los componentes R, G y B de una imagen a color."""
         try:
             b, g, r = cv2.split(imagen)
 

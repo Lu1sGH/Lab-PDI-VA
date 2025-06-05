@@ -13,9 +13,9 @@ class Conteo:
             num_labels_8, labels_8 = self.etiquetado(binary, 8) # Vecindad-8
             self.mostrarImg(labels_4, "Etiquetado con Vecindad-4", "jet", True)
             self.mostrarImg(labels_8, "Etiquetado con Vecindad-8", "jet", True)
-            img_contornos = self.dibujarContornos(binary)
+            img_contornos, total = self.dibujarContornos(binary)
             self.mostrarImg(cv2.cvtColor(img_contornos, cv2.COLOR_BGR2RGB), "Objetos Detectados y Numerados", None)
-            self.mostrarInfo(num_labels_4, num_labels_8)
+            self.mostrarInfo(num_labels_4, num_labels_8, total)
         except Exception as e:
             msg.error_message(f"Error al realizar el conteo de objetos: {e}")
             print(f"Error al realizar el conteo de objetos: {e}")
@@ -69,12 +69,14 @@ class Conteo:
             cv2.putText(image_color, f'A:{int(area)} px^2, P:{int(perimetro)} px', 
                         (x, y + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,0), 1)
 
-        return image_color
+        return image_color, i
     
-    def mostrarInfo(self, nl4, nl8):
+    def mostrarInfo(self, nl4, nl8, total):
         # Mostrar diferencias obtenidas entre Vecindad-4 y Vecindad-8
         msg.todobien_message(f"Número de objetos detectados con vecindad-4: {nl4 - 1}")
         msg.todobien_message(f"Número de objetos detectados con vecindad-8: {nl8 - 1}")
         # ----- 4. Comparación entre vecindad-4 y vecindad-8 -----
         diferencia = abs(nl4 - nl8)
         msg.todobien_message(f"Diferencia entre vecindad-4 y vecindad-8: {diferencia}")
+        msg.todobien_message(f"Objetos contados en total: {total + 1}")
+        

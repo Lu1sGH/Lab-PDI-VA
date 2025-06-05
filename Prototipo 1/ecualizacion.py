@@ -137,3 +137,17 @@ class Ecualizador:
             msg.error_message(f"Error al aplicar contracción: {str(e)}")
             print(f"Error al aplicar contracción: {str(e)}")
             return None
+        
+    def ecualizacionAdaptativa(self, img):
+        try:
+            if len(img.shape) == 3:
+                msg.alerta_message("El método no admite imágenes a color. La imagen se convertirá a grises para su uso.")
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            ecualizada = clahe.apply(img)
+            return ecualizada
+        except Exception as e:
+            msg.error_message(f"Error al ecualizar adaptativamente: {str(e)}")
+            print(f"Error al ecualizar adaptativamente: {str(e)}")
+            return None

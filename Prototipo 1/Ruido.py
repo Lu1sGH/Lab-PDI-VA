@@ -4,6 +4,7 @@ import Messages as msg
 
 class Ruido:
     def ruido_salPimienta(self, imagen, p=0.02):
+        """Agrega ruido tipo sal y pimienta a una imagen."""
         img_ruidosa = imagen.copy() #Copia de la imagen original
         c = img_ruidosa.shape[2] if len(img_ruidosa.shape) == 3 else 1 #Verificamos si la imagen es a color o en escala de grises
         alt, anch = img_ruidosa.shape[:2] #Obtenemos las dimensiones de la imagen (alto y ancho)
@@ -19,11 +20,13 @@ class Ruido:
         return img_ruidosa
     
     def ruidoGaussiano(self, img, media=0, desEs=25):
+        """Agrega ruido gaussiano a una imagen."""
         ruido = np.random.normal(media, desEs, img.shape).astype(np.uint8)
         img_ruidosa = cv2.add(img, ruido)
         return img_ruidosa
     
     def ruidoMultiplicativo(self, img, media=0, desEs=0.1):
+        """Agrega ruido multiplicativo a una imagen."""
         img_float = img.astype(np.float32) / 255.0 #Convertir a float32 y normalizar a [0, 1]
         ruido = np.random.normal(loc=media, scale=desEs, size=img.shape).astype(np.float32) #Generar ruido multiplicativo con la misma forma que la imagen
         img_ruidosa = img_float * (1 + ruido) #Aplicar el ruido multiplicativo

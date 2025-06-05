@@ -8,6 +8,5 @@ def alerta_message(message): #Función para mostrar mensajes de alerta
 def error_message(message): #Función para mostrar mensajes de error
     CTkMessagebox(title="Error", message=message, icon="cancel", font=fuente)
 
-def todobien_message(message): #Función para mostrar mensajes de confirmación
+def todobien_message(message): #Función para mostrar mensajes de confirmación.
     CTkMessagebox(title="Todo salió bien :)", message=message, icon="check", font=fuente)
-

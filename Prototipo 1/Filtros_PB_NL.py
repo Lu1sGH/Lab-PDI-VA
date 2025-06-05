@@ -3,76 +3,52 @@ import numpy as np
 import Messages as msg
 
 class Filtros_PasoBajas_NoLineales:
-    def filtro_max(self, img=None): #Implementación del filtro máximo
+    def filtro_max(self, img, kernel=3):
+        """Implementa un filtro máximo."""
         if img is None: return None
 
         self.img = img
         self.fil, self.col = self.img.shape
-        self.w_max = np.zeros((self.fil + 2, self.col + 2), dtype=np.uint8) #Se inicializa la máscara de 3x3 con ceros
-        self.img_max = np.zeros((self.fil, self.col), dtype=np.uint8) #Se inicializa la imagen de salida con ceros
+        pad = kernel // 2
 
-        for j in range(1, self.fil + 1):
-            for i in range(1, self.col + 1):
-                self.w_max[j, i] = self.img[j - 1, i - 1]
+        # Padding de la imagen para bordes
+        padded_img = np.pad(self.img, pad_width=pad, mode='constant', constant_values=0)
+        self.img_max = np.zeros_like(self.img, dtype=np.uint8)
 
-                # Variables para w_max (máscara de 3x3)
-                a = self.w_max[j - 1, i - 1]
-                b = self.w_max[j, i - 1]
-                c = self.w_max[j + 1, i - 1]
-                d = self.w_max[j - 1, i]
-                e = self.w_max[j, i]
-                f = self.w_max[j + 1, i]
-                g = self.w_max[j - 1, i + 1]
-                h = self.w_max[j, i + 1]
-                k = self.w_max[j + 1, i + 1]
+        for j in range(self.fil):
+            for i in range(self.col):
+                region = padded_img[j:j+kernel, i:i+kernel]
+                self.img_max[j, i] = np.max(region)
 
-                A_max = [[a, b, c, d, e, f, g, h, k]]
 
-                maximo = np.amax(A_max)
-
-                self.img_max[j - 1, i - 1] = maximo
-
-    
-    def filtro_min(self, img=None): #Implementación del filtro mínimo
+    def filtro_min(self, img, kernel=3):
+        """Implementa un filtro mínimo."""
         if img is None: return None
 
         self.img = img
         self.fil, self.col = self.img.shape
-        self.w_min = np.ones((self.fil + 2, self.col + 2), dtype=np.uint8) * 255 #Se inicializa la máscara de 3x3 con 255 (blanco)
-        self.img_min = np.ones((self.fil, self.col), dtype=np.uint8) * 255 #Se inicializa la imagen de salida con 255 (blanco)
+        pad = kernel // 2 #Calcula el borde necesario para la imagen en funcion el tamaño del kernel
 
-        for j in range(1, self.fil + 1):
-            for i in range(1, self.col + 1):
-                self.w_min[j, i] = self.img[j - 1, i - 1]
+        # Padding de la imagen para bordes
+        padded_img = np.pad(self.img, pad_width=pad, mode='constant', constant_values=255)
+        self.img_min = np.zeros_like(self.img, dtype=np.uint8)
 
-                # Variables para w_min (máscara de 3x3)
-                a1 = self.w_min[j - 1, i - 1]
-                b1 = self.w_min[j, i - 1]
-                c1 = self.w_min[j + 1, i - 1]
-                d1 = self.w_min[j - 1, i]
-                e1 = self.w_min[j, i]
-                f1 = self.w_min[j + 1, i]
-                g1 = self.w_min[j - 1, i + 1]
-                h1 = self.w_min[j, i + 1]
-                k1 = self.w_min[j + 1, i + 1]
+        for j in range(self.fil):
+            for i in range(self.col):
+                region = padded_img[j:j+kernel, i:i+kernel]
+                self.img_min[j, i] = np.min(region)
 
-                A_min = [[a1, b1, c1, d1, e1, f1, g1, h1, k1]]
-
-                minimo = np.amin(A_min)
-
-                self.img_min[j - 1, i - 1] = minimo
-
-    def aplicar_filtro(self, img, tipo_filtro):
+    def aplicar_filtro(self, img, tipo_filtro, kernel):
         try:
             if len(img.shape) == 3 and img.shape[2] == 3:  # Verifica si la imagen es a color (3 canales)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # Convierte a escala de grises
 
             if tipo_filtro == "Filtro Máximo":
-                self.filtro_max(img)
+                self.filtro_max(img, kernel=kernel)
                 msg.todobien_message("Filtro máximo aplicado correctamente.")
                 return self.img_max
             elif tipo_filtro == "Filtro Mínimo":
-                self.filtro_min(img)
+                self.filtro_min(img, kernel=kernel)
                 msg.todobien_message("Filtro mínimo aplicado correctamente.")
                 return self.img_min
         except Exception as e:

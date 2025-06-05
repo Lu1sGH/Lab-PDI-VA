@@ -32,7 +32,7 @@ class App(cusTK.CTk):
         super().__init__()
         
         #Inicialización de la ventana principal
-        self.title("Prototipo 1")
+        self.title("Laboratorio de PDI")
         self.geometry(f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}")
         self.minsize(700, 600)
         self.resizable(True, True)
@@ -65,9 +65,10 @@ class App(cusTK.CTk):
             self.top_bar,
             values=["Abrir Imagen", "Guardar Imagen Activa", "Cerrar Imagen Activa"],
             command=self.archivos_action,
-            font=fuente_global
+            font=fuente_global,
+            dropdown_font=fuente_global
         )
-        self.archivos_menu.set("Archivos")
+        self.archivos_menu.set("📁 Archivos")
         self.archivos_menu.pack(side="left", padx=10, pady=10)
 
         #Menu para seleccionar imagen. Este menú permite elegir la imagen activa para operar.
@@ -75,57 +76,62 @@ class App(cusTK.CTk):
             self.top_bar,
             values=["Imagen 1", "Imagen 2", "Imagen 3 (Resultado)"],
             command=self.cambiar_imagen_actual,
-            font=fuente_global
+            font=fuente_global,
+            dropdown_font=fuente_global
         )
-        self.selector_menu.set("Elegir imagen activa")
+        self.selector_menu.set("💻 Elegir imagen activa")
         self.selector_menu.pack(side="left", padx=10, pady=10)
 
         #Menu de color. Muestra opciones sobre el color de la imagen activa.
-        self.operaciones_menu = cusTK.CTkOptionMenu(
+        self.colorObjetos_menu = cusTK.CTkOptionMenu(
             self.top_bar,
             values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", 
                     "Umbralizar adaptativamente \npor propiedades locales", "Umbralizar adaptativamente \npor partición", 
                     "Histograma Imagen Activa", "Contar Objetos"],
             command=self.color_action,
-            font=fuente_global
+            font=fuente_global,
+            dropdown_font=fuente_global
         )
-        self.operaciones_menu.set("Colores y objetos")
-        self.operaciones_menu.pack(side="left", padx=10, pady=10)
+        self.colorObjetos_menu.set("🖼 Colores y objetos")
+        self.colorObjetos_menu.pack(side="left", padx=10, pady=10)
 
         #Menu de operaciones
         self.operaciones_menu = cusTK.CTkOptionMenu(
             self.top_bar,
             values=["Suma", "Resta", "Multiplicación", "AND", "OR", "XOR", "NOT", 
                     "Ecualizar Uniformemente", "Ecualización Rayleigh", "Ecualización hipercúbica", 
-                    "Ecualización exponencial", "Ecualización logaritmo hiperbólica", "Expansión", "Contracción", "Corrección Gamma"],
+                    "Ecualización exponencial", "Ecualización logaritmo hiperbólica", "Expansión", "Contracción", 
+                    "Corrección Gamma", "Ecualización Adaptativa"],
             command=self.operaciones_action,
-            font=fuente_global
+            font=fuente_global,
+            dropdown_font=fuente_global
         )
-        self.operaciones_menu.set("Operaciones")
+        self.operaciones_menu.set("📊 Operaciones")
         self.operaciones_menu.pack(side="left", padx=10, pady=10)
 
         #Menu para filtros y ruido
-        self.archivos_menu = cusTK.CTkOptionMenu(
+        self.filtros_menu = cusTK.CTkOptionMenu(
             self.top_bar,
             values=["Añadir ruido impulsivo", "Añadir ruido Gaussiano", "Añadir ruido multiplicativo", 
                     "Filtro Máximo", "Filtro Mínimo", "Filtro promediador", "Filtro promediador pesado", "Filtro mediana", 
                     "Filtro bilateral", "Filtro Gaussiano", "Filtro de Canny"],
             command=self.filtros_action,
-            font=fuente_global
+            font=fuente_global,
+            dropdown_font=fuente_global
         )
-        self.archivos_menu.set("Filtros y ruido")
-        self.archivos_menu.pack(side="left", padx=10, pady=10)
+        self.filtros_menu.set("🎇 Filtros y ruido")
+        self.filtros_menu.pack(side="left", padx=10, pady=10)
 
         #Botón para ajustar constantes
-        self.cons_boton = cusTK.CTkButton(self.top_bar, text="Ajustar constantes", command=self.setConstantes, font=fuente_global)
+        self.cons_boton = cusTK.CTkButton(self.top_bar, text="⚙ Ajustar constantes", command=self.setConstantes, font=fuente_global, hover_color="#0A380A")
         self.cons_boton.pack(side="left", padx=10, pady=10)
 
         #Boton para deshacer cambios
-        self.deshacer_boton = cusTK.CTkButton(self.top_bar, text="Deshacer", command=self.deshacerCambios, font=fuente_global, width=30)
+        self.deshacer_boton = cusTK.CTkButton(self.top_bar, text="↺ Deshacer", command=self.deshacerCambios, font=fuente_global, width=30, hover_color="#851717")
         self.deshacer_boton.pack(side="left", padx=10, pady=10)
 
         #Botón para cambiar entre modo claro y oscuro
-        self.toggle_button = cusTK.CTkButton(self.top_bar, text="Modo oscuro", command=self.toggle_theme, font=fuente_global)
+        self.toggle_button = cusTK.CTkButton(self.top_bar, text="☀ Modo claro", command=self.toggle_theme, font=fuente_global, hover_color="#171717")
         self.toggle_button.pack(side="right", padx=10, pady=10)
 
         #Parte principal (contenedor de imágenes y resultados)
@@ -161,10 +167,10 @@ class App(cusTK.CTk):
         try:
             if cusTK.get_appearance_mode() == "Light":
                 cusTK.set_appearance_mode("Dark")
-                self.toggle_button.configure(text="Modo claro")
+                self.toggle_button.configure(text="☀ Modo claro")
             else:
                 cusTK.set_appearance_mode("Light")
-                self.toggle_button.configure(text="Modo oscuro")
+                self.toggle_button.configure(text="🌙 Modo oscuro")
         except Exception as e:
             msg.error_message(f"Error al cambiar el tema: {str(e)}")
             print(f"Error al cambiar el tema: {str(e)}")
@@ -180,8 +186,12 @@ class App(cusTK.CTk):
             self.imagen_actual = 2
         elif seleccion == "Imagen 3 (Resultado)":
             self.imagen_actual = 3
-        
-        self.operaciones_menu.set("Operaciones")  #Recargar el menú de operaciones
+
+        #Reset de los menús
+        self.archivos_menu.set("📁 Archivos")
+        self.colorObjetos_menu.set("🖼 Colores y objetos")
+        self.operaciones_menu.set("📊 Operaciones")
+        self.filtros_menu.set("🎇 Filtros y ruido")
 
     def obtener_imagen_actual(self):
         try:
@@ -288,6 +298,9 @@ class App(cusTK.CTk):
             elif choice == "Corrección Gamma":
                 resultado = self.ec.correccionGamma(actual)
                 self.setResultado(resultado)
+            elif choice == "Ecualización Adaptativa":
+                resultado = self.ec.ecualizacionAdaptativa(actual)
+                self.setResultado(resultado)
         except Exception as e:
             msg.error_message(f"Error en las operaciones: {str(e)}")
             print(f"Error al realizar la operación: {str(e)}")
@@ -312,10 +325,10 @@ class App(cusTK.CTk):
                 resultado = self.ruido.ruidoMultiplicativo(actual)
                 self.setResultado(resultado)
             elif choice == "Filtro Máximo":
-                resultado = self.fPBNL.aplicar_filtro(actual, choice)
+                resultado = self.fPBNL.aplicar_filtro(actual, choice, self.t_kernel)
                 self.setResultado(resultado)
             elif choice == "Filtro Mínimo":
-                resultado = self.fPBNL.aplicar_filtro(actual, choice)
+                resultado = self.fPBNL.aplicar_filtro(actual, choice, self.t_kernel)
                 self.setResultado(resultado)
             elif choice == "Filtro promediador":
                 resultado = self.fPBNL.filtro_promediador(actual, ksize = self.t_kernel)

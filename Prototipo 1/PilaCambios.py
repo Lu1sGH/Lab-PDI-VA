@@ -5,7 +5,7 @@ class PilaCambios:
     def __init__(self):
         self.pila = [None]
 
-    def guardar(self, cambio): #Agregar cambios a la pila
+    def guardar(self, cambio): #Agregar cambios a la pila.
         try:
             self.pila.append(cambio)
         except Exception as e:

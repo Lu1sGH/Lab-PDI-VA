@@ -91,7 +91,7 @@ class Filtros_Paso_Altas:
     def hysteresis(self, img, weak, strong=255):
         """Conecta los píxeles débiles a los fuertes."""
         M, N = img.shape
-        # Conectar píxeles débiles a los fuertes si son vecinos, convirtiéndolos en bordes definitivos
+        # Conectar píxeles débiles a los fuertes si son vecinos, convirtiéndolos en bordes definitivos.
         for i in range(1, M-1):
             for j in range(1, N-1):
                 if img[i,j] == weak: # Si es un píxel débil
@@ -105,6 +105,7 @@ class Filtros_Paso_Altas:
         return img
 
     def Canny(self, img, kernel = 5, sig = 1.4):
+        """Aplica el filtro de Canny para detección de bordes."""
         try:
             if len(img.shape) == 3:
                 msg.alerta_message("El método solo admite imágenes en escala de grises")
@@ -114,7 +115,6 @@ class Filtros_Paso_Altas:
             g, theta = self.sobel_filters(blurred)
             nms = self.non_maximum_suppression(g, theta)
             thresh, debil, fuerte = self.double_threshold_manual(nms, 70, 75)
-            #if(True): return cv2.Canny(thresh, debil, fuerte, apertureSize=kernel, L2gradient=True)
             bordes = self.hysteresis(thresh, debil, strong = fuerte)
 
             return bordes

@@ -4,6 +4,7 @@ import cv2
 
 class Segmentacion:
     def calcParticiones(self, ancho, alto, max_divisiones = 10):
+        """Algoritmo para calcular la mejor partición de una imagen en bloques cuadrados o rectangulares."""
         mejorError = float('inf') #El mejor error inicia en infinito
         mejorParticion = (1, 1) #La mejor partición. Inicial es de 1x1 píxel.
         
@@ -22,6 +23,7 @@ class Segmentacion:
         return mejorParticion
 
     def umbraladoSegmentacion(self, img, maxSeg):
+        """Segmentación de una imagen por umbralización adaptativa por partición."""
         try:
             if len(img.shape) == 3:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -55,6 +57,7 @@ class Segmentacion:
             return None
 
     def umbralizacionAdaptativa(self, img, kernel = 3, c=0):
+        """Aplica un umbral adaptativo a la imagen por propiedades locales."""
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
