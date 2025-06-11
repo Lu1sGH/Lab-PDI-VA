@@ -135,6 +135,10 @@ class Operaciones:
     def mostrar_componentes_RGB(self, imagen=None):
         """Muestra los componentes R, G y B de una imagen a color."""
         try:
+            if len(imagen.shape) != 3:
+                msg.error_message("La imagen no es a color (debe tener 3 canales).")
+                return
+        
             b, g, r = cv2.split(imagen)
 
             zeros = np.zeros(imagen.shape[:2], dtype="uint8")

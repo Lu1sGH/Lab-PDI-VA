@@ -85,9 +85,11 @@ class App(cusTK.CTk):
         #Menu de color. Muestra opciones sobre el color de la imagen activa.
         self.colorObjetos_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Canales RGB", "Convertir a escala de grises", "Umbralizar", 
-                    "Umbralizar adaptativamente \npor propiedades locales", "Umbralizar adaptativamente \npor partición", 
-                    "Histograma Imagen Activa", "Contar Objetos"],
+            values=["Canales RGB", "Convertir a escala de grises", "Histograma Imagen Activa", "Umbralizar manualmente",
+                    "Umbralizar adaptativamente \npor propiedades locales", "Umbralizar adaptativamente \npor partición",
+                    "Umbralizar por media", "Umbralizar por Otsu", "Umbralizar por Multiumbralización", "Umbralización por Kapur",
+                    "Umbralización banda", "Umbralización por mínimo del histograma",
+                    "Contar Objetos"],
             command=self.color_action,
             font=fuente_global,
             dropdown_font=fuente_global
@@ -229,7 +231,9 @@ class App(cusTK.CTk):
             elif choice == "Convertir a escala de grises":
                 resultado = self.op.aGris(imagen=actual)
                 self.setResultado(resultado)
-            elif choice == "Umbralizar":
+            elif choice == "Histograma Imagen Activa":
+                self.op.mostrar_histograma(actual)
+            elif choice == "Umbralizar manualmente":
                 self.elegir_umbral()
             elif choice == "Umbralizar adaptativamente \npor propiedades locales":
                 resultado = self.seg.umbralizacionAdaptativa(actual, kernel = self.t_kernel , c = self.c)
@@ -237,8 +241,24 @@ class App(cusTK.CTk):
             elif choice == "Umbralizar adaptativamente \npor partición":
                 resultado = self.seg.umbraladoSegmentacion(actual, self.maxSeg)
                 self.setResultado(resultado)
-            elif choice == "Histograma Imagen Activa":
-                self.op.mostrar_histograma(actual)
+            elif choice == "Umbralizar por media":
+                resultado = self.seg.segmentacionUmbralMedia(actual)
+                self.setResultado(resultado)
+            elif choice == "Umbralizar por Otsu":
+                resultado = self.seg.segmentacionOtsu(actual)
+                self.setResultado(resultado)
+            elif choice == "Umbralizar por Multiumbralización":
+                resultado = self.seg.segmentacionMultiumbral(actual, self.maxSeg)
+                self.setResultado(resultado)
+            elif choice == "Umbralización por Kapur":
+                resultado = self.seg.segmentacionKapur(actual)
+                self.setResultado(resultado)
+            elif choice == "Umbralización banda":
+                resultado = self.seg.segmentacionUmbralBanda(actual)
+                self.setResultado(resultado)
+            elif choice == "Umbralización por mínimo del histograma":
+                resultado = self.seg.segmentacionMinimoHistograma(actual)
+                self.setResultado(resultado)
             elif choice == "Contar Objetos":
                 self.conteo.conteoCompleto(actual)
         except Exception as e:
