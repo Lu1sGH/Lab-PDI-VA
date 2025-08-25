@@ -1,6 +1,6 @@
 """
 PAQUETES A INSTALAR:
-pip install numpy, matplotlib, opencv-python, customtkinter, CTkMessagebox
+pip install numpy, matplotlib, opencv-python, customtkinter, CTkMessagebox, opencv-contrib-python
 """
 
 #Librearias para la interfaz grafica
@@ -22,6 +22,8 @@ from Filtros_PB_NL import Filtros_PasoBajas_NoLineales
 from Segmentacion import Segmentacion
 from Filtros_PA import Filtros_Paso_Altas
 from Conteo import Conteo
+from Morfologia import Mofologia
+from Editor_Kernel import EditorKernel
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -45,6 +47,7 @@ class App(cusTK.CTk):
         self.fPA = Filtros_Paso_Altas() #Instancia de la clase de filtros paso altas
         self.seg = Segmentacion() #Instancia de la clase de segmentación
         self.conteo = Conteo() #Instancia de la clase de conteo de objetos
+        self.morfologia = Mofologia()
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
@@ -124,6 +127,22 @@ class App(cusTK.CTk):
         self.filtros_menu.set("🎇 Filtros y ruido")
         self.filtros_menu.pack(side="left", padx=10, pady=10)
 
+        #Menu para Morfología
+        self.morfologia_menu = cusTK.CTkOptionMenu(
+            self.top_bar,
+            values=["Erosión", "Dilatación", "Apertura", "Cierre", "Hit or Miss", "Frontera Interior", "Frontera Exterior",
+                    "Apertura tradicional", "Cierre tradicional", "Thinning", "Esqueleto", "Tophat", "Blackhat", "Gradiente simétrico"],
+            command=self.morfologia_action,
+            font=fuente_global,
+            dropdown_font=fuente_global
+        )
+        self.morfologia_menu.set("🔳 Morfología")
+        self.morfologia_menu.pack(side="left", padx=10, pady=10)
+
+        #Botón para elemento estructural
+        self.elemEst = cusTK.CTkButton(self.top_bar, text="EE", command=self.elementoEstructural_action, font=fuente_global, width=20)
+        self.elemEst.pack(side="left", padx=10, pady=10)
+
         #Botón para ajustar constantes
         self.cons_boton = cusTK.CTkButton(self.top_bar, text="⚙ Ajustar constantes", command=self.setConstantes, font=fuente_global, hover_color="#0A380A")
         self.cons_boton.pack(side="left", padx=10, pady=10)
@@ -194,6 +213,7 @@ class App(cusTK.CTk):
         self.colorObjetos_menu.set("🖼 Colores y objetos")
         self.operaciones_menu.set("📊 Operaciones")
         self.filtros_menu.set("🎇 Filtros y ruido")
+        self.morfologia_menu.set("🔳 Morfología")
 
     def obtener_imagen_actual(self):
         try:
@@ -371,6 +391,63 @@ class App(cusTK.CTk):
         except Exception as e:
             msg.error_message(f"Error al aplicar el filtro: {str(e)}")
             print(f"Error al aplicar el filtro: {str(e)}")
+
+    def morfologia_action(self, choice): #Acciones del menú de morfología
+        try:
+            actual = self.obtener_imagen_actual()
+            if actual is None:
+                msg.alerta_message("No se ha cargado una imagen.")
+                return
+            
+            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+                self.cambios.guardar(self.resultado.copy())
+
+            if choice == "Erosión":
+                resultado = self.morfologia.erosionCV(actual)
+                self.setResultado(resultado)
+            elif choice == "Dilatación":
+                resultado = self.morfologia.dilatacionCV(actual)
+                self.setResultado(resultado)
+            elif choice == "Apertura":
+                resultado = self.morfologia.aperturaCV(actual)
+                self.setResultado(resultado)
+            elif choice == "Cierre":
+                resultado = self.morfologia.cierreCV(actual)
+                self.setResultado(resultado)
+            elif choice == "Hit or Miss":
+                resultado = self.morfologia.hitOrMissCV(actual)
+                self.setResultado(resultado)
+            elif choice == "Frontera Interior":
+                resultado = self.morfologia.fronteraInteriorCV(actual)
+                self.setResultado(resultado)
+            elif choice == "Frontera Exterior":
+                resultado = self.morfologia.fronteraExteriorCV(actual)
+                self.setResultado(resultado)
+            elif choice == "Apertura tradicional":
+                resultado = self.morfologia.apertura(actual)
+                self.setResultado(resultado)
+            elif choice == "Cierre tradicional":
+                resultado = self.morfologia.cierre(actual)
+                self.setResultado(resultado)
+            elif choice == "Thinning":
+                resultado = self.morfologia.adelgazamiento(actual)
+                self.setResultado(resultado)
+            elif choice == "Esqueleto":
+                resultado = self.morfologia.esqueleto(actual)
+                self.setResultado(resultado)
+            elif choice == "Tophat":
+                resultado = self.morfologia.tophat(actual)
+                self.setResultado(resultado)
+            elif choice == "Blackhat":
+                resultado = self.morfologia.blackhat(actual)
+                self.setResultado(resultado)
+            elif choice == "Gradiente simétrico":
+                resultado = self.morfologia.gradSim(actual)
+                self.setResultado(resultado)
+
+        except Exception as e:
+            msg.error_message(f"Error al aplicar la morfología: {str(e)}")
+            print(f"Error al aplicar la morfología: {str(e)}")
 
     def elegir_umbral(self): #Popup para elegir el umbral
         actual = self.obtener_imagen_actual()
@@ -553,6 +630,13 @@ class App(cusTK.CTk):
         entrada5.insert(0, str(self.sigma))
 
         cusTK.CTkButton(popupC, text="Aceptar", command=aceptar).pack(pady=15)
+
+    def elementoEstructural_action(self):
+        eK = EditorKernel(self, self.t_kernel, self.t_kernel)
+        self.wait_window(eK)
+        self.morfologia.setEE(eK.getKernel())
+
+        print(self.morfologia.kernel)
 
 if __name__ == "__main__":
     app = App()
