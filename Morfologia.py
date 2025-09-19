@@ -7,7 +7,7 @@ class Mofologia:
     def __init__(self):
         # Definir el kernel (EE)
         self.kernel = np.ones((3,3), np.uint8)
-        self.kT = [
+        """self.kT = [
             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
             [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
             [0,0,1,0,0,1,1,1,1,0,0,0,0,0,0,0],
@@ -15,10 +15,10 @@ class Mofologia:
             [0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0],
             [0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        ]
-        self.kT = np.array(self.kT, dtype=np.uint8)
-        self.kernel = self.kT.copy()
-        self.kernel = np.where(self.kernel == 0, -1, 1)
+        ]"""
+        #self.kT = np.array(self.kT, dtype=np.uint8)
+        #self.kernel = self.kT.copy()
+        #self.kernel = np.where(self.kernel == 0, -1, 1)
 
     def setEE(self, kernelC):
         self.kernel = kernelC

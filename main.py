@@ -1,6 +1,9 @@
 """
-PAQUETES A INSTALAR:
-pip install numpy, matplotlib, opencv-python, customtkinter, CTkMessagebox, opencv-contrib-python
+Programa desarrollado por:
+Gonzalo 🕊🕊
+Luis Z 
+Daniel Diaz
+Danielle Sophia
 """
 
 #Librearias para la interfaz grafica
@@ -24,6 +27,7 @@ from Filtros_PA import Filtros_Paso_Altas
 from Conteo import Conteo
 from Morfologia import Mofologia
 from Editor_Kernel import EditorKernel
+from Mascaras_Operadores import Mascaras_Operadores
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -34,7 +38,7 @@ class App(cusTK.CTk):
         super().__init__()
         
         #Inicialización de la ventana principal
-        self.title("Laboratorio de PDI")
+        self.title("Laboratorio de Imágenes")
         self.geometry(f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}")
         self.minsize(700, 600)
         self.resizable(True, True)
@@ -47,7 +51,8 @@ class App(cusTK.CTk):
         self.fPA = Filtros_Paso_Altas() #Instancia de la clase de filtros paso altas
         self.seg = Segmentacion() #Instancia de la clase de segmentación
         self.conteo = Conteo() #Instancia de la clase de conteo de objetos
-        self.morfologia = Mofologia()
+        self.morfologia = Mofologia() #Instancia de la clase de morfología
+        self.maskOp = Mascaras_Operadores() #Instancia de la clase de máscaras y operadores
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
@@ -59,10 +64,51 @@ class App(cusTK.CTk):
         self.maxSeg = 0 #Constante para número máximo de segmentos en umbralizado por segmentación.
         self.sigma = 0.75 #Constante para filtros Gaussianos.
 
-        #Barra superior
+        #Barra superior para operaciones de PDI
         self.top_bar = cusTK.CTkFrame(self, height=50)
         self.top_bar.pack(side="top", fill="x")
+        
+        #Barra superior para operaciones de Visión Artificial
+        self.top_bar2 = cusTK.CTkFrame(self, height=50)
+        self.top_bar2.pack(side="top", fill="x")
 
+        #Parte principal (contenedor de imágenes y resultados)
+        self.content_frame = cusTK.CTkFrame(self)
+        self.content_frame.pack(fill="both", expand=True)
+
+        #Frame principal izquierdo
+        self.frame_imagen = cusTK.CTkFrame(self.content_frame)
+        self.frame_imagen.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
+        #Subframe para imagen 1
+        self.frame_imagen1 = cusTK.CTkFrame(self.frame_imagen)
+        self.frame_imagen1.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.image_label1 = cusTK.CTkLabel(self.frame_imagen1, text="")
+        self.image_label1.pack(fill="both", expand=True)
+
+        #Subframe para imagen 2
+        self.frame_imagen2 = cusTK.CTkFrame(self.frame_imagen)
+        self.frame_imagen2.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.image_label2 = cusTK.CTkLabel(self.frame_imagen2, text="")
+        self.image_label2.pack(fill="both", expand=True)
+
+        #Frame para resultado de las operaciones
+        self.frameResultado = cusTK.CTkFrame(self.content_frame)
+        self.frameResultado.pack(side="right", fill="both", expand=True, padx=5, pady=5)
+
+        self.resultadoLabel = cusTK.CTkLabel(self.frameResultado, text="")
+        self.resultadoLabel.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self.init_componentes_PDI() #Inicializa los componentes de la barra superior de PDI
+        self.init_componentes_VA() #Inicializa los componentes de la barra superior de Visión Artificial
+
+        """#Botón para cambiar entre modo claro y oscuro (DEPRECATED)
+        #self.toggle_button = cusTK.CTkButton(self.top_bar, text="☀ Modo claro", command=self.toggle_theme, font=fuente_global, hover_color="#171717")
+        #self.toggle_button.pack(side="right", padx=10, pady=10)"""
+
+    def init_componentes_PDI(self): #Inicializa los componentes de la barra superior de PDI
         #Menu para archivos
         self.archivos_menu = cusTK.CTkOptionMenu(
             self.top_bar,
@@ -127,6 +173,17 @@ class App(cusTK.CTk):
         self.filtros_menu.set("🎇 Filtros y ruido")
         self.filtros_menu.pack(side="left", padx=10, pady=10)
 
+        #Menu para Mascaras y Operadores
+        self.mas_op_menu = cusTK.CTkOptionMenu(
+            self.top_bar,
+            values=["Operador de Sobel"],
+            command=self.mascaras_y_operadores_action,
+            font=fuente_global,
+            dropdown_font=fuente_global
+        )
+        self.mas_op_menu.set("🎭 Máscaras y Operadores")
+        self.mas_op_menu.pack(side="left", padx=10, pady=10)
+
         #Menu para Morfología
         self.morfologia_menu = cusTK.CTkOptionMenu(
             self.top_bar,
@@ -144,57 +201,30 @@ class App(cusTK.CTk):
         self.elemEst.pack(side="left", padx=10, pady=10)
 
         #Botón para ajustar constantes
-        self.cons_boton = cusTK.CTkButton(self.top_bar, text="⚙ Ajustar constantes", command=self.setConstantes, font=fuente_global, hover_color="#0A380A")
+        self.cons_boton = cusTK.CTkButton(self.top_bar, text="⚙ Constantes", command=self.setConstantes, font=fuente_global, hover_color="#0A380A")
         self.cons_boton.pack(side="left", padx=10, pady=10)
 
         #Boton para deshacer cambios
-        self.deshacer_boton = cusTK.CTkButton(self.top_bar, text="↺ Deshacer", command=self.deshacerCambios, font=fuente_global, width=30, hover_color="#851717")
+        self.deshacer_boton = cusTK.CTkButton(self.top_bar, text="↺", command=self.deshacerCambios, font=fuente_global, width=30, hover_color="#851717")
         self.deshacer_boton.pack(side="left", padx=10, pady=10)
 
-        #Botón para cambiar entre modo claro y oscuro
-        self.toggle_button = cusTK.CTkButton(self.top_bar, text="☀ Modo claro", command=self.toggle_theme, font=fuente_global, hover_color="#171717")
-        self.toggle_button.pack(side="right", padx=10, pady=10)
+    def init_componentes_VA(self): #Inicializa los componentes de la barra superior de Visión Artificial
+        text = cusTK.CTkLabel(self.top_bar2, text="Componentes de Visión Artificial próximamente...", font=fuente_global)
+        text.pack(padx=10, pady=10)
+        pass
 
-        #Parte principal (contenedor de imágenes y resultados)
-        self.content_frame = cusTK.CTkFrame(self)
-        self.content_frame.pack(fill="both", expand=True)
-
-        #Frame principal izquierdo
-        self.frame_imagen = cusTK.CTkFrame(self.content_frame)
-        self.frame_imagen.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-
-        #Subframe para imagen 1
-        self.frame_imagen1 = cusTK.CTkFrame(self.frame_imagen)
-        self.frame_imagen1.pack(fill="both", expand=True, padx=10, pady=5)
-
-        self.image_label1 = cusTK.CTkLabel(self.frame_imagen1, text="")
-        self.image_label1.pack(fill="both", expand=True)
-
-        #Subframe para imagen 2
-        self.frame_imagen2 = cusTK.CTkFrame(self.frame_imagen)
-        self.frame_imagen2.pack(fill="both", expand=True, padx=10, pady=5)
-
-        self.image_label2 = cusTK.CTkLabel(self.frame_imagen2, text="")
-        self.image_label2.pack(fill="both", expand=True)
-
-        #Frame para resultado de las operaciones
-        self.frameResultado = cusTK.CTkFrame(self.content_frame)
-        self.frameResultado.pack(side="right", fill="both", expand=True, padx=5, pady=5)
-
-        self.resultadoLabel = cusTK.CTkLabel(self.frameResultado, text="")
-        self.resultadoLabel.pack(fill="both", expand=True, padx=10, pady=10)
-
+    """ DEPRECATED
     def toggle_theme(self): #Cambiar entre modo claro y oscuro
         try:
             if cusTK.get_appearance_mode() == "Light":
                 cusTK.set_appearance_mode("Dark")
-                self.toggle_button.configure(text="☀ Modo claro")
+                self.toggle_button.configure(text="☀ Modo claro")# Modo guerra
             else:
                 cusTK.set_appearance_mode("Light")
-                self.toggle_button.configure(text="🌙 Modo oscuro")
+                self.toggle_button.configure(text="🌙 Modo oscuro")# 🗣🗣🗣
         except Exception as e:
             msg.error_message(f"Error al cambiar el tema: {str(e)}")
-            print(f"Error al cambiar el tema: {str(e)}")
+            print(f"Error al cambiar el tema: {str(e)}")"""
 
     def deshacerCambios(self):
         des = self.cambios.deshacer()
@@ -213,6 +243,7 @@ class App(cusTK.CTk):
         self.colorObjetos_menu.set("🖼 Colores y objetos")
         self.operaciones_menu.set("📊 Operaciones")
         self.filtros_menu.set("🎇 Filtros y ruido")
+        self.mas_op_menu.set("🎭 Máscaras y Operadores")
         self.morfologia_menu.set("🔳 Morfología")
 
     def obtener_imagen_actual(self):
@@ -391,6 +422,24 @@ class App(cusTK.CTk):
         except Exception as e:
             msg.error_message(f"Error al aplicar el filtro: {str(e)}")
             print(f"Error al aplicar el filtro: {str(e)}")
+
+    def mascaras_y_operadores_action(self, choice): #Acciones del menú de máscaras y operadores
+        try:
+            actual = self.obtener_imagen_actual()
+            if actual is None:
+                msg.alerta_message("No se ha cargado una imagen.")
+                return
+            
+            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+                self.cambios.guardar(self.resultado.copy())
+
+            if choice == "Operador de Sobel":
+                pass
+            else:
+                pass
+        except Exception as e:
+            msg.error_message(f"Error al aplicar el operador: {str(e)}")
+            print(f"Error al aplicar el operador: {str(e)}")
 
     def morfologia_action(self, choice): #Acciones del menú de morfología
         try:
