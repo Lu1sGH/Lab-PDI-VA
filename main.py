@@ -176,7 +176,8 @@ class App(cusTK.CTk):
         #Menu para Mascaras y Operadores
         self.mas_op_menu = cusTK.CTkOptionMenu(
             self.top_bar,
-            values=["Operador de Sobel"],
+            values=["Operador de Sobel", "Operador de Prewitt", "Operador de Roberts", "Operador de Laplace",
+                    "Mascaras de Kirsch", "Máscaras de Robinson", "Máscaras de Frei-Chen"],
             command=self.mascaras_y_operadores_action,
             font=fuente_global,
             dropdown_font=fuente_global
@@ -435,7 +436,17 @@ class App(cusTK.CTk):
 
             if choice == "Operador de Sobel":
                 pass
-            else:
+            elif choice == "Operador de Prewitt":
+                pass
+            elif choice == "Operador de Roberts":
+                pass
+            elif choice == "Operador de Laplace":
+                pass
+            elif choice == "Mascaras de Kirsch":
+                pass
+            elif choice == "Máscaras de Robinson":
+                pass
+            elif choice == "Máscaras de Frei-Chen":
                 pass
         except Exception as e:
             msg.error_message(f"Error al aplicar el operador: {str(e)}")
