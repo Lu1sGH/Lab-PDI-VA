@@ -447,7 +447,8 @@ class App(cusTK.CTk):
             elif choice == "Máscaras de Robinson":
                 pass
             elif choice == "Máscaras de Frei-Chen":
-                pass
+                resultado = self.maskOp.frei_chen(actual)
+                self.setResultado(resultado)
         except Exception as e:
             msg.error_message(f"Error al aplicar el operador: {str(e)}")
             print(f"Error al aplicar el operador: {str(e)}")
