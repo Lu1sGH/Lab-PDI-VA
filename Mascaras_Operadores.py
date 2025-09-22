@@ -4,16 +4,7 @@ import cv2 as cv
 
 class Mascaras_Operadores:
     def __init__(self):
-        pass
-
-    import numpy as np
-
-    def frei_chen(self, img):
-        if len(img.shape) == 3:
-            msg.alerta_message("La imagen se ha convertido a escala de grises.")
-            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-
-        kernels = [
+        self.kernelsFC = [
             (1/(2*np.sqrt(2))) * np.array([[1,  np.sqrt(2),  1],
                                         [0,  0,          0],
                                         [-1, -np.sqrt(2), -1]]),
@@ -43,16 +34,71 @@ class Mascaras_Operadores:
                             [1, 1, 1]])
         ]
 
+        self.compass_kirsch = {
+            "N": np.array([[ 5,  5,  5],
+                        [-3,  0, -3],
+                        [-3, -3, -3]], dtype=np.float32),
+
+            "NE": np.array([[ 5,  5, -3],
+                            [ 5,  0, -3],
+                            [-3, -3, -3]], dtype=np.float32),
+
+            "E": np.array([[ 5, -3, -3],
+                        [ 5,  0, -3],
+                        [ 5, -3, -3]], dtype=np.float32),
+
+            "SE": np.array([[-3, -3, -3],
+                            [ 5,  0, -3],
+                            [ 5,  5, -3]], dtype=np.float32),
+
+            "S": np.array([[-3, -3, -3],
+                        [-3,  0, -3],
+                        [ 5,  5,  5]], dtype=np.float32),
+
+            "SW": np.array([[-3, -3, -3],
+                            [-3,  0,  5],
+                            [-3,  5,  5]], dtype=np.float32),
+
+            "W": np.array([[-3, -3,  5],
+                        [-3,  0,  5],
+                        [-3, -3,  5]], dtype=np.float32),
+
+            "NW": np.array([[-3,  5,  5],
+                            [-3,  0,  5],
+                            [-3, -3, -3]], dtype=np.float32)
+        }
+    
+    def frei_chen(self, img):
+        if len(img.shape) == 3:
+            msg.alerta_message("La imagen se ha convertido a escala de grises.")
+            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        
         #Se aplica la convolucón con cada kernel
-        responses = [cv.filter2D(img.astype(np.float32), -1, k) for k in kernels]
+        results = [cv.filter2D(img.astype(np.float32), -1, k) for k in self.kernelsFC]
 
         #Para aplicar np.sqrt(M/S)
         #M = suma de cuadrados de la convolución de los primeros 4 kernels
-        M = sum(r**2 for r in responses[0:4])
+        M = sum(r**2 for r in results[0:4])
 
         #S = suma de cuadrados de todas las convoluciones
-        S = sum(r**2 for r in responses)
+        S = sum(r**2 for r in results)
 
         result = np.sqrt(M / (S + 1e-8))  #Añadir un pequeño valor para evitar división por cero
 
         return (result * 255).astype(np.uint8)
+
+    def kirsch(self, img, dir = "T"):
+        if len(img.shape) == 3:
+            msg.alerta_message("La imagen se ha convertido a escala de grises.")
+            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+        if dir == "T": #Todas las direcciones aplicadas
+            results = [cv.filter2D(img.astype(np.float32), -1, k) for k in self.compass_kirsch.values()]
+            result = np.maximum.reduce(results) #Se elige el valor máximo entre todas las direcciones
+        else:
+            if dir not in self.compass_kirsch: #Dirección inválida
+                msg.error_message("Dirección inválida para el operador de Kirsch.")
+                return None
+            result = cv.filter2D(img.astype(np.float32), -1, self.compass_kirsch[dir])
+        
+        return cv.normalize(result, None, 0, 255, cv.NORM_MINMAX).astype(np.uint8)

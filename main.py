@@ -63,6 +63,7 @@ class App(cusTK.CTk):
         self.const = 0 #Constante para operaciones aritmeticas. También para fil promedio pesado y corrección gamma.
         self.maxSeg = 0 #Constante para número máximo de segmentos en umbralizado por segmentación.
         self.sigma = 0.75 #Constante para filtros Gaussianos.
+        self.kirsch_dir = "T" #Dirección para el operador de Kirsch. Por defecto, todas las direcciones.
 
         #Barra superior para operaciones de PDI
         self.top_bar = cusTK.CTkFrame(self, height=50)
@@ -443,7 +444,8 @@ class App(cusTK.CTk):
             elif choice == "Operador de Laplace":
                 pass
             elif choice == "Mascaras de Kirsch":
-                pass
+                resultado = self.maskOp.kirsch(actual, dir=self.kirsch_dir)
+                self.setResultado(resultado)
             elif choice == "Máscaras de Robinson":
                 pass
             elif choice == "Máscaras de Frei-Chen":
@@ -642,7 +644,7 @@ class App(cusTK.CTk):
     def setConstantes(self): #Método para ajustar constantes
         popupC = cusTK.CTkToplevel(self)#Crear ventana emergente
         popupC.title("Ajustar constantes")
-        popupC.geometry("300x450")
+        popupC.geometry("300x550")
         popupC.grab_set()  #Hace modal la ventana
 
         def aceptar():
@@ -652,6 +654,7 @@ class App(cusTK.CTk):
                 const = float(entrada3.get())
                 segmentos = int(entrada4.get())
                 desEst = float(entrada5.get())
+                k_dir = self.kirsch_dir_map[self.kirsch_dir_var.get()]  #Obtener el valor real de la dirección seleccionada
                 if kernel % 2 != 1:
                     msg.alerta_message("El tamaño del kernel tiene que ser un número impar.")
                 else:
@@ -660,6 +663,7 @@ class App(cusTK.CTk):
                     self.const = const
                     self.maxSeg = segmentos
                     self.sigma = desEst
+                    self.kirsch_dir = k_dir
                     popupC.destroy()
             except ValueError:
                 msg.alerta_message("Por favor, ingrese solo números.")
@@ -689,6 +693,26 @@ class App(cusTK.CTk):
         entrada5 = cusTK.CTkEntry(popupC)
         entrada5.pack(pady=5)
         entrada5.insert(0, str(self.sigma))
+
+        cusTK.CTkLabel(popupC, text="Dirección del compass de Kirsch:").pack(pady=5)
+        direcciones_kirsch = [
+            ("Todos", "T"),
+            ("Norte", "N"),
+            ("Noreste", "NE"),
+            ("Este", "E"),
+            ("Sureste", "SE"),
+            ("Sur", "S"),
+            ("Suroeste", "SW"),
+            ("Oeste", "W"),
+            ("Noroeste", "NW")
+        ]
+        #Mostrar solo los nombres en el menú
+        opciones_mostrar = [nombre for nombre, _ in direcciones_kirsch]
+        #Mapeo nombre -> valor
+        self.kirsch_dir_map = {nombre: valor for nombre, valor in direcciones_kirsch}
+        self.kirsch_dir_var = tk.StringVar(value=opciones_mostrar[0])
+        entrada6 = cusTK.CTkOptionMenu(popupC, values=opciones_mostrar, variable=self.kirsch_dir_var)
+        entrada6.pack(pady=5)
 
         cusTK.CTkButton(popupC, text="Aceptar", command=aceptar).pack(pady=15)
 
