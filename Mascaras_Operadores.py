@@ -67,6 +67,50 @@ class Mascaras_Operadores:
                             [-3,  0,  5],
                             [-3, -3, -3]], dtype=np.float32)
         }
+        
+        # Kernel para Laplace
+        self.kernel_laplace_4 = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
+        self.kernel_laplace_8 = np.array([[1, 1, 1], [1, -8, 1], [1, 1, 1]])
+
+        # Kernels para Robinson
+        norte = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+        noroeste = np.array([[2, 1, 0], [1, 0, -1], [0, -1, -2]])
+        oeste = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
+        suroeste = np.array([[0, -1, -2], [1, 0, -1], [2, 1, 0]])
+        self.robinson_kernels = [norte, noroeste, oeste, suroeste, -norte, -noroeste, -oeste, -suroeste]
+    
+    def laplace(self, img, tipo_kernel=4):
+        """
+        """
+        if len(img.shape) == 3:
+            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        
+        # Seleccionar el kernel basado en el parámetro
+        if tipo_kernel == 8:
+            kernel = self.kernel_laplace_8
+        elif tipo_kernel == 4:
+            kernel = self.kernel_laplace_4
+        else:
+            # En caso de un valor no válido, se usa el de 4 por defecto
+            msg.alerta_message(f"Tipo de kernel '{tipo_kernel}' no válido para Laplace. Usando el de 4-conectividad.")
+            kernel = self.kernel_laplace_4
+        
+        # Aplicar la convolución
+        laplace_raw = cv.filter2D(img, cv.CV_64F, kernel)
+        
+        # Escalar y convertir los valores
+        resultado = cv.convertScaleAbs(laplace_raw)
+        return resultado
+    
+    def robinson(self, img):
+        """"""
+        if len(img.shape) == 3:
+            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        
+        matrices = [np.abs(cv.filter2D(img, cv.CV_64F, k)) for k in self.robinson_kernels]
+        matriz3d = np.max(np.stack(matrices, axis=0), axis=0)
+        resultado = cv.convertScaleAbs(matriz3d)
+        return resultado
     
     def frei_chen(self, img):
         if len(img.shape) == 3:

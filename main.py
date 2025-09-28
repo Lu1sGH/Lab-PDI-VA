@@ -432,7 +432,9 @@ class App(cusTK.CTk):
                 msg.alerta_message("No se ha cargado una imagen.")
                 return
             
-            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+            # La lógica para guardar el estado previo se mueve al popup para Laplace
+            # para evitar guardados dobles o innecesarios.
+            if choice != "Operador de Laplace" and self.resultado is not None:
                 self.cambios.guardar(self.resultado.copy())
 
             if choice == "Operador de Sobel":
@@ -445,12 +447,13 @@ class App(cusTK.CTk):
                 resultado = self.maskOp.roberts(actual)
                 self.setResultado(resultado)
             elif choice == "Operador de Laplace":
-                pass
+                self.elegir_kernel_laplace()
             elif choice == "Mascaras de Kirsch":
                 resultado = self.maskOp.kirsch(actual, dir=self.kirsch_dir)
                 self.setResultado(resultado)
             elif choice == "Máscaras de Robinson":
-                pass
+                resultado = self.maskOp.robinson(actual)
+                self.setResultado(resultado)
             elif choice == "Máscaras de Frei-Chen":
                 resultado = self.maskOp.frei_chen(actual)
                 self.setResultado(resultado)
@@ -549,6 +552,36 @@ class App(cusTK.CTk):
         resultado = self.op.umbralizar(actual, umbral)
         self.setResultado(resultado)
         self.ventana_umbral.destroy()
+    
+    def elegir_kernel_laplace(self):
+        """"""
+        actual = self.obtener_imagen_actual()
+        if actual is None:
+            msg.alerta_message("No hay una imagen activa para operar.")
+            return
+
+        # Crear ventana emergente
+        popup = cusTK.CTkToplevel(self)
+        popup.title("Kernel de Laplace")
+        popup.geometry("300x150")
+        popup.grab_set()  # Hace la ventana modal
+
+        cusTK.CTkLabel(popup, text="Seleccione el tipo de kernel:", font=fuente_global).pack(pady=10)
+
+        # Función interna para aplicar el filtro y cerrar el popup
+        def aplicar_laplace(tipo):
+            if self.resultado is not None:
+                self.cambios.guardar(self.resultado.copy())
+            resultado = self.maskOp.laplace(actual, tipo_kernel=tipo)
+            self.setResultado(resultado)
+            popup.destroy()
+
+        # Botones de selección
+        btn4 = cusTK.CTkButton(popup, text="Kernel de 5 valores", command=lambda: aplicar_laplace(4))
+        btn4.pack(pady=5, padx=20, fill="x")
+
+        btn8 = cusTK.CTkButton(popup, text="Kernel de 9 valores", command=lambda: aplicar_laplace(8))
+        btn8.pack(pady=5, padx=20, fill="x")
 
     def abrir_imagen(self): #Carga de imágenes
         try:
