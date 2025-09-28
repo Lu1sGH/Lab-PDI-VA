@@ -436,11 +436,14 @@ class App(cusTK.CTk):
                 self.cambios.guardar(self.resultado.copy())
 
             if choice == "Operador de Sobel":
-                pass
+                resultado = self.maskOp.sobel(actual)
+                self.setResultado(resultado)
             elif choice == "Operador de Prewitt":
-                pass
+                resultado = self.maskOp.prewitt(actual)
+                self.setResultado(resultado)
             elif choice == "Operador de Roberts":
-                pass
+                resultado = self.maskOp.roberts(actual)
+                self.setResultado(resultado)
             elif choice == "Operador de Laplace":
                 pass
             elif choice == "Mascaras de Kirsch":

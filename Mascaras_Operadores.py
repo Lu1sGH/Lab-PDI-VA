@@ -102,3 +102,60 @@ class Mascaras_Operadores:
             result = cv.filter2D(img.astype(np.float32), -1, self.compass_kirsch[dir])
         
         return cv.normalize(result, None, 0, 255, cv.NORM_MINMAX).astype(np.uint8)
+    
+    def sobel(self, img,):
+        if len(img.shape) == 3:
+            msg.alerta_message("La imagen se ha convertido a escala de grises.")
+            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        
+        kx = np.array([[-1, 0, 1],
+                       [-2, 0, 2],
+                       [-1, 0, 1]], dtype = np.float32)
+        
+        ky = np.array([[-1, -2, -1],
+                       [0, 0, 0],
+                       [1, 2, 1]], dtype = np.float32)
+        
+        gx = cv.filter2D(img.astype(np.float32), -1, kx)
+        gy = cv.filter2D(img.astype(np.float32), -1, ky)
+
+        #Magnitud del gradiente
+        mag = np.hypot(gx, gy)
+        return cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX).astype(np.uint8)
+    
+    def prewitt(self, img): 
+        if len(img.shape) == 3:
+            msg.alerta_message("La imagen se ha convertido a escala de grises.")
+            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+        kx = np.array([[-1, 0, 1],
+                       [-1, 0, 1],
+                       [-1, 0, 1]], dtype = np.float32)
+        
+        ky = np.array([[1, 1, 1],
+                       [0, 0, 0],
+                       [-1, -1, -1]], dtype = np.float32)
+        
+        gx = cv.filter2D(img.astype(np.float32), -1, kx)
+        gy = cv.filter2D(img.astype(np.float32), -1, ky)
+
+        mag = np.hypot(gx, gy)
+        return cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX).astype(np.uint8)
+
+    def roberts (self, img): 
+        if len(img.shape) == 3:
+            msg.alerta_message("La imagen se ha convertido a escala de grises.")
+            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        
+        kx = np.array([[1, 0],
+                      [0, -1]], dtype= np.float32)
+        
+        ky = np.array([[0, 1],
+                       [-1, 0]], dtype= np.float32)
+
+        gx = cv.filter2D(img.astype(np.float32), -1, kx)
+        gy = cv.filter2D(img.astype(np.float32), -1, ky) 
+
+        mag = np.hypot(gx, gy)
+        return cv.normalize(mag, None, 0, 225, cv.NORM_MINMAX).astype(np.uint8)
+    
