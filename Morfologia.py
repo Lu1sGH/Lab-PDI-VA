@@ -107,6 +107,7 @@ class Mofologia:
             msg.alerta_message("El método no admite imágenes a color. La imagen se convertirá a grises para su uso.")
             imagen = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
 
+        #Esqueletizacion usando el método de Zhang-Suen
         sk = cv2.ximgproc.thinning(imagen, thinningType=cv2.ximgproc.THINNING_GUOHALL)
 
         return sk
