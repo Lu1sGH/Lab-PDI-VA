@@ -28,6 +28,7 @@ from Conteo import Conteo
 from Morfologia import Mofologia
 from Editor_Kernel import EditorKernel
 from Mascaras_Operadores import Mascaras_Operadores
+from TemplateMatching import TemplateMatching
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -53,6 +54,7 @@ class App(cusTK.CTk):
         self.conteo = Conteo() #Instancia de la clase de conteo de objetos
         self.morfologia = Mofologia() #Instancia de la clase de morfología
         self.maskOp = Mascaras_Operadores() #Instancia de la clase de máscaras y operadores
+        self.tmO = TemplateMatching() #Instancia de la clase de Template Matching
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
@@ -211,9 +213,18 @@ class App(cusTK.CTk):
         self.deshacer_boton.pack(side="left", padx=10, pady=10)
 
     def init_componentes_VA(self): #Inicializa los componentes de la barra superior de Visión Artificial
-        text = cusTK.CTkLabel(self.top_bar2, text="Componentes de Visión Artificial próximamente...", font=fuente_global)
-        text.pack(padx=10, pady=10)
-        pass
+        #Menu para template matching
+        self.tm_menu = cusTK.CTkOptionMenu(
+            self.top_bar2,
+            values=["Regular", "Normalizada", "Correlación", 
+                    "Correlación Normalizada", "Coeficientes de Correlación", 
+                    "Coeficientes de Correlación Normalizada"],
+            command=self.tm_action,
+            font=fuente_global,
+            dropdown_font=fuente_global
+        )
+        self.tm_menu.set("🥅 Temp Match")
+        self.tm_menu.pack(side="left", padx=10, pady=10)
 
     """ DEPRECATED
     def toggle_theme(self): #Cambiar entre modo claro y oscuro
@@ -758,6 +769,35 @@ class App(cusTK.CTk):
         self.morfologia.setEE(eK.getKernel())
 
         print(self.morfologia.kernel)
+
+    def tm_action(self, choice): #Acciones del menú de template matching
+        try:
+            if self.imagen1 is None or self.imagen2 is None:
+                msg.alerta_message("Debe cargar dos imágenes para realizar Template Matching.")
+                return
+            
+            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+                self.cambios.guardar(self.resultado.copy())
+
+            if choice == "Regular":
+                metodo = 'TM_SQDIFF'
+            elif choice == "Normalizada":
+                metodo = 'TM_SQDIFF_NORMED'
+            elif choice == "Correlación":
+                metodo = 'TM_CCORR'
+            elif choice == "Correlación Normalizada":
+                metodo = 'TM_CCORR_NORMED'
+            elif choice == "Coeficientes de Correlación":
+                metodo = 'TM_CCOEFF'
+            elif choice == "Coeficientes de Correlación Normalizada":
+                metodo = 'TM_CCOEFF_NORMED'
+
+            resultado = self.tmO.tm_OpenCV(img=self.imagen1, template=self.imagen2, metodo=metodo)
+            self.setResultado(resultado)
+
+        except Exception as e:
+            msg.error_message(f"Error al aplicar la Template Matching: {str(e)}")
+            print(f"Error al aplicar la Template Matching: {str(e)}")
 
 if __name__ == "__main__":
     app = App()

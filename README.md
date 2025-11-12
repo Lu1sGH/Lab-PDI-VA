@@ -3,4 +3,4 @@ Este repositorio ofrece una colección completa de algoritmos de procesamiento d
 
 La aplicación permite realizar prácticas directas con diversas operaciones clásicas de procesamiento de imágenes, como detección de bordes, transformaciones morfológicas, filtrado espacial, segmentación de imágenes, ecualización de histogramas y conteo de objetos.
 
-Para más información, consulta la documentación generado en https://deepwiki.com/Lu1sGH/Lab-PDI-VA/1-home
+Para más información, consulta la documentación generada en https://deepwiki.com/Lu1sGH/Lab-PDI-VA/
