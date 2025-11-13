@@ -217,8 +217,10 @@ class App(cusTK.CTk):
         self.tm_menu = cusTK.CTkOptionMenu(
             self.top_bar2,
             values=["Regular", "Normalizada", "Correlación", 
-                    "Correlación Normalizada", "Coeficientes de Correlación", 
-                    "Coeficientes de Correlación Normalizada"],
+                    "Correlación\n Normalizada", "Coeficientes de\n Correlación", 
+                    "Coeficientes de\n Correlación\n Normalizada",
+                    "R Manual", "RN Manual", "C Manual",
+                    "CN Manual", "CC Manual", "CCN Manual"],
             command=self.tm_action,
             font=fuente_global,
             dropdown_font=fuente_global
@@ -258,6 +260,7 @@ class App(cusTK.CTk):
         self.filtros_menu.set("🎇 Filtros y ruido")
         self.mas_op_menu.set("🎭 Máscaras y Operadores")
         self.morfologia_menu.set("🔳 Morfología")
+        self.tm_menu.set("🥅 Temp Match")
 
     def obtener_imagen_actual(self):
         try:
@@ -776,23 +779,50 @@ class App(cusTK.CTk):
                 msg.alerta_message("Debe cargar dos imágenes para realizar Template Matching.")
                 return
             
+            if self.imagen1.shape < self.imagen2.shape:
+                msg.alerta_message("La imagen 1 debe ser más grande que la imagen 2 (template).")
+                return
+            
             if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
                 self.cambios.guardar(self.resultado.copy())
 
+            manual = False
+            
             if choice == "Regular":
-                metodo = 'TM_SQDIFF'
+                mtd = 'TM_SQDIFF'
             elif choice == "Normalizada":
-                metodo = 'TM_SQDIFF_NORMED'
+                mtd = 'TM_SQDIFF_NORMED'
             elif choice == "Correlación":
-                metodo = 'TM_CCORR'
-            elif choice == "Correlación Normalizada":
-                metodo = 'TM_CCORR_NORMED'
-            elif choice == "Coeficientes de Correlación":
-                metodo = 'TM_CCOEFF'
-            elif choice == "Coeficientes de Correlación Normalizada":
-                metodo = 'TM_CCOEFF_NORMED'
+                mtd = 'TM_CCORR'
+            elif choice == "Correlación\n Normalizada":
+                mtd = 'TM_CCORR_NORMED'
+            elif choice == "Coeficientes de\n Correlación":
+                mtd = 'TM_CCOEFF'
+            elif choice == "Coeficientes de\n Correlación\n Normalizada":
+                mtd = 'TM_CCOEFF_NORMED'
+            elif choice == "R Manual":
+                mtd = 'TM_SQDIFF'
+                manual = True
+            elif choice == "RN Manual":
+                mtd = 'TM_SQDIFF_NORMED'
+                manual = True
+            elif choice == "C Manual":
+                mtd = 'TM_CCORR'
+                manual = True
+            elif choice == "CN Manual":
+                mtd = 'TM_CCORR_NORMED'
+                manual = True
+            elif choice == "CC Manual":
+                mtd = 'TM_CCOEFF'
+                manual = True
+            elif choice == "CCN Manual":
+                mtd = 'TM_CCOEFF_NORMED'
+                manual = True
 
-            resultado = self.tmO.tm_OpenCV(img=self.imagen1, template=self.imagen2, metodo=metodo)
+            if not manual:
+                resultado = self.tmO.tm_OpenCV(img=self.imagen1, template=self.imagen2, metodo=mtd)
+            else:
+                resultado = self.tmO.tm_Manual(img=self.imagen1, template=self.imagen2, metodo=mtd)
             self.setResultado(resultado)
 
         except Exception as e:
