@@ -30,6 +30,7 @@ from Editor_Kernel import EditorKernel
 from Mascaras_Operadores import Mascaras_Operadores
 from TemplateMatching import TemplateMatching
 from DeteccionEsquinas import DeteccionEsquinas
+from AnalisisPerimetro import AnalisisPerimetro
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -60,6 +61,7 @@ class App(cusTK.CTk):
         self.harris_blockSize = 3
         self.harris_ksize = 5
         self.harris_k = 0.04
+        self.analisisPerimetro = AnalisisPerimetro() #Instancia de la clase de análisis de perímetro
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
@@ -146,7 +148,8 @@ class App(cusTK.CTk):
                     "Umbralizar adaptativamente \npor propiedades locales", "Umbralizar adaptativamente \npor partición",
                     "Umbralizar por media", "Umbralizar por Otsu", "Umbralizar por Multiumbralización", "Umbralización por Kapur",
                     "Umbralización banda", "Umbralización por mínimo del histograma",
-                    "Contar Objetos"],
+                    "Contar Objetos", "Segmentación Watershed", "Segmentación K-means", 
+                    "Segmentación Mean Shift", "Segmentación GrabCut"],
             command=self.color_action,
             font=fuente_global,
             dropdown_font=fuente_global
@@ -244,6 +247,18 @@ class App(cusTK.CTk):
         self.esquinas_menu.set("🔍 Detección de Esquinas")
         self.esquinas_menu.pack(side="left", padx=10, pady=10)
 
+        #Menu para análisis de perímetro
+        self.perimetro_menu = cusTK.CTkOptionMenu(
+            self.top_bar2,
+            values=["Analizar Perímetro", "Perímetro Exacto", "Perímetro y Área", 
+                    "Perímetro con Aproximación"],
+            command=self.perimetro_action,
+            font=fuente_global,
+            dropdown_font=fuente_global
+        )
+        self.perimetro_menu.set("📐 Análisis Perímetro")
+        self.perimetro_menu.pack(side="left", padx=10, pady=10)
+
     """ DEPRECATED
     def toggle_theme(self): #Cambiar entre modo claro y oscuro
         try:
@@ -278,6 +293,7 @@ class App(cusTK.CTk):
         self.morfologia_menu.set("🔳 Morfología")
         self.tm_menu.set("🥅 Temp Match")
         self.esquinas_menu.set("🔍 Detección de Esquinas")
+        self.perimetro_menu.set("📐 Análisis Perímetro")
 
     def obtener_imagen_actual(self):
         try:
@@ -345,6 +361,18 @@ class App(cusTK.CTk):
                 self.setResultado(resultado)
             elif choice == "Contar Objetos":
                 self.conteo.conteoCompleto(actual)
+            elif choice == "Segmentación Watershed":
+                resultado = self.seg.segmentacionWatershed(actual)
+                self.setResultado(resultado)
+            elif choice == "Segmentación K-means":
+                resultado = self.seg.segmentacionKMeans(actual, k=3)
+                self.setResultado(resultado)
+            elif choice == "Segmentación Mean Shift":
+                resultado = self.seg.segmentacionMeanShift(actual)
+                self.setResultado(resultado)
+            elif choice == "Segmentación GrabCut":
+                resultado = self.seg.segmentacionGrabCut(actual)
+                self.setResultado(resultado)
         except Exception as e:
             msg.error_message(f"Error en las opciones de color: {str(e)}")
             print(f"Error en las opciones de color: {str(e)}")
@@ -981,6 +1009,32 @@ class App(cusTK.CTk):
         except Exception as e:
             msg.error_message(f"Error en detección de esquinas: {str(e)}")
             print(f"Error en detección de esquinas: {str(e)}")
+
+    def perimetro_action(self, choice): #Acciones del menú de análisis de perímetro
+        try:
+            actual = self.obtener_imagen_actual()
+            if actual is None:
+                msg.alerta_message("No se ha cargado una imagen.")
+                return
+            
+            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+                self.cambios.guardar(self.resultado.copy())
+            
+            if choice == "Analizar Perímetro":
+                resultado = self.analisisPerimetro.analizar_perimetro(actual)
+                self.setResultado(resultado)
+            elif choice == "Perímetro Exacto":
+                resultado = self.analisisPerimetro.calcular_perimetro_exacto(actual)
+                self.setResultado(resultado)
+            elif choice == "Perímetro y Área":
+                resultado = self.analisisPerimetro.analizar_perimetro_y_area(actual)
+                self.setResultado(resultado)
+            elif choice == "Perímetro con Aproximación":
+                resultado = self.analisisPerimetro.perimetro_con_aproximacion(actual)
+                self.setResultado(resultado)
+        except Exception as e:
+            msg.error_message(f"Error en análisis de perímetro: {str(e)}")
+            print(f"Error en análisis de perímetro: {str(e)}")
 
 if __name__ == "__main__":
     app = App()

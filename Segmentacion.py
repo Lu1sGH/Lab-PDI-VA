@@ -184,3 +184,143 @@ class Segmentacion:
         except Exception as e:
             msg.error_message(f"Error en segmentación por mínimo de histograma: {str(e)}")
             return None
+    
+    # SEGMENTACIÓN CON OPENCV
+    
+    def segmentacionWatershed(self, imagen):
+        """
+        Segmentación usando el algoritmo Watershed de OpenCV.
+        Efectivo para separar objetos que se tocan.
+        """
+        try:
+            if len(imagen.shape) != 3:
+                msg.alerta_message("Watershed requiere una imagen a color. Se convertirá.")
+                imagen = cv2.cvtColor(imagen, cv2.COLOR_GRAY2BGR)
+            
+            # Convertir a escala de grises
+            gray = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+            
+            # Aplicar umbral
+            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            
+            # Eliminar ruido
+            kernel = np.ones((3, 3), np.uint8)
+            opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
+            
+            # Área de fondo segura
+            sure_bg = cv2.dilate(opening, kernel, iterations=3)
+            
+            # Área de frente segura
+            dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
+            _, sure_fg = cv2.threshold(dist_transform, 0.7 * dist_transform.max(), 255, 0)
+            
+            # Área desconocida
+            sure_fg = np.uint8(sure_fg)
+            unknown = cv2.subtract(sure_bg, sure_fg)
+            
+            # Marcadores
+            _, markers = cv2.connectedComponents(sure_fg)
+            markers = markers + 1
+            markers[unknown == 255] = 0
+            
+            # Aplicar Watershed
+            markers = cv2.watershed(imagen, markers)
+            imagen[markers == -1] = [0, 255, 0]  # Marcar bordes en verde
+            
+            # Convertir marcadores a imagen visualizable
+            resultado = np.zeros_like(gray, dtype=np.uint8)
+            resultado[markers > 1] = 255
+            
+            return cv2.cvtColor(resultado, cv2.COLOR_GRAY2BGR)
+            
+        except Exception as e:
+            msg.error_message(f"Error en segmentación Watershed: {str(e)}")
+            print(f"Error en segmentación Watershed: {str(e)}")
+            return None
+    
+    def segmentacionKMeans(self, imagen, k=3):
+        """
+        Segmentación usando K-means clustering de OpenCV.
+        """
+        try:
+            # Convertir imagen a array 1D
+            data = imagen.reshape((-1, 3))
+            data = np.float32(data)
+            
+            # Criterios de parada
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
+            
+            # Aplicar K-means
+            _, labels, centers = cv2.kmeans(data, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+            
+            # Convertir centros a uint8
+            centers = np.uint8(centers)
+            
+            # Mapear píxeles a sus centros de cluster
+            segmented_data = centers[labels.flatten()]
+            
+            # Remodelar a las dimensiones originales
+            resultado = segmented_data.reshape(imagen.shape)
+            
+            return resultado
+            
+        except Exception as e:
+            msg.error_message(f"Error en segmentación K-means: {str(e)}")
+            print(f"Error en segmentación K-means: {str(e)}")
+            return None
+    
+    def segmentacionMeanShift(self, imagen, sp=10, sr=50):
+        """
+        Segmentación usando Mean Shift filtering de OpenCV.
+        """
+        try:
+            if len(imagen.shape) != 3:
+                msg.alerta_message("Mean Shift requiere una imagen a color. Se convertirá.")
+                imagen = cv2.cvtColor(imagen, cv2.COLOR_GRAY2BGR)
+            
+            # Aplicar Mean Shift
+            resultado = cv2.pyrMeanShiftFiltering(imagen, sp, sr)
+            
+            return resultado
+            
+        except Exception as e:
+            msg.error_message(f"Error en segmentación Mean Shift: {str(e)}")
+            print(f"Error en segmentación Mean Shift: {str(e)}")
+            return None
+    
+    def segmentacionGrabCut(self, imagen, iteraciones=5):
+        """
+        Segmentación usando GrabCut de OpenCV.
+        Usa un rectángulo inicial que cubre toda la imagen.
+        """
+        try:
+            if len(imagen.shape) != 3:
+                msg.alerta_message("GrabCut requiere una imagen a color. Se convertirá.")
+                imagen = cv2.cvtColor(imagen, cv2.COLOR_GRAY2BGR)
+            
+            # Crear máscara inicial (todo como probable fondo)
+            h, w = imagen.shape[:2]
+            mask = np.zeros((h, w), np.uint8)
+            
+            # Modelos de fondo y primer plano
+            bgdModel = np.zeros((1, 65), np.float64)
+            fgdModel = np.zeros((1, 65), np.float64)
+            
+            # Rectángulo que cubre toda la imagen (ajustar según necesidad)
+            rect = (10, 10, w-20, h-20)
+            
+            # Aplicar GrabCut
+            cv2.grabCut(imagen, mask, rect, bgdModel, fgdModel, iteraciones, cv2.GC_INIT_WITH_RECT)
+            
+            # Crear máscara binaria
+            mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+            
+            # Aplicar máscara a la imagen
+            resultado = imagen * mask2[:, :, np.newaxis]
+            
+            return resultado
+            
+        except Exception as e:
+            msg.error_message(f"Error en segmentación GrabCut: {str(e)}")
+            print(f"Error en segmentación GrabCut: {str(e)}")
+            return None
