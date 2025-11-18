@@ -29,6 +29,7 @@ from Morfologia import Mofologia
 from Editor_Kernel import EditorKernel
 from Mascaras_Operadores import Mascaras_Operadores
 from TemplateMatching import TemplateMatching
+from DeteccionEsquinas import DeteccionEsquinas
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -55,6 +56,10 @@ class App(cusTK.CTk):
         self.morfologia = Mofologia() #Instancia de la clase de morfología
         self.maskOp = Mascaras_Operadores() #Instancia de la clase de máscaras y operadores
         self.tmO = TemplateMatching() #Instancia de la clase de Template Matching
+        self.detEsq = DeteccionEsquinas()  # Instancia de detección de esquinas
+        self.harris_blockSize = 3
+        self.harris_ksize = 5
+        self.harris_k = 0.04
         self.imagen1 = None
         self.imagen2 = None
         self.resultado = None
@@ -227,6 +232,17 @@ class App(cusTK.CTk):
         )
         self.tm_menu.set("🥅 Temp Match")
         self.tm_menu.pack(side="left", padx=10, pady=10)
+        
+        # Menu para detección de esquinas
+        self.esquinas_menu = cusTK.CTkOptionMenu(
+            self.top_bar2,
+            values=["Harris (OpenCV)", "Harris Manual"],
+            command=self.esquinas_action,
+            font=fuente_global,
+            dropdown_font=fuente_global
+        )
+        self.esquinas_menu.set("🔍 Detección de Esquinas")
+        self.esquinas_menu.pack(side="left", padx=10, pady=10)
 
     """ DEPRECATED
     def toggle_theme(self): #Cambiar entre modo claro y oscuro
@@ -261,6 +277,7 @@ class App(cusTK.CTk):
         self.mas_op_menu.set("🎭 Máscaras y Operadores")
         self.morfologia_menu.set("🔳 Morfología")
         self.tm_menu.set("🥅 Temp Match")
+        self.esquinas_menu.set("🔍 Detección de Esquinas")
 
     def obtener_imagen_actual(self):
         try:
@@ -705,6 +722,9 @@ class App(cusTK.CTk):
                 segmentos = int(entrada4.get())
                 desEst = float(entrada5.get())
                 k_dir = self.kirsch_dir_map[self.kirsch_dir_var.get()]  #Obtener el valor real de la dirección seleccionada
+                h_blockSize = int(entrada7.get())
+                h_ksize = int(entrada8.get())
+                h_k = float(entrada9.get())
                 if kernel % 2 != 1:
                     msg.alerta_message("El tamaño del kernel tiene que ser un número impar.")
                 else:
@@ -714,6 +734,9 @@ class App(cusTK.CTk):
                     self.maxSeg = segmentos
                     self.sigma = desEst
                     self.kirsch_dir = k_dir
+                    self.harris_blockSize = h_blockSize
+                    self.harris_ksize = h_ksize
+                    self.harris_k = h_k
                     popupC.destroy()
             except ValueError:
                 msg.alerta_message("Por favor, ingrese solo números.")
@@ -765,6 +788,21 @@ class App(cusTK.CTk):
         entrada6.pack(pady=5)
 
         cusTK.CTkButton(popupC, text="Aceptar", command=aceptar).pack(pady=15)
+        
+        cusTK.CTkLabel(popupC, text="Harris - Block Size:").pack(pady=5)
+        entrada7 = cusTK.CTkEntry(popupC)
+        entrada7.pack(pady=5)
+        entrada7.insert(0, str(self.harris_blockSize))
+
+        cusTK.CTkLabel(popupC, text="Harris - Ksize (Sobel):").pack(pady=5)
+        entrada8 = cusTK.CTkEntry(popupC)
+        entrada8.pack(pady=5)
+        entrada8.insert(0, str(self.harris_ksize))
+
+        cusTK.CTkLabel(popupC, text="Harris - k (sensibilidad):").pack(pady=5)
+        entrada9 = cusTK.CTkEntry(popupC)
+        entrada9.pack(pady=5)
+        entrada9.insert(0, str(self.harris_k))
 
     def elementoEstructural_action(self):
         eK = EditorKernel(self, self.t_kernel, self.t_kernel)
@@ -828,6 +866,121 @@ class App(cusTK.CTk):
         except Exception as e:
             msg.error_message(f"Error al aplicar la Template Matching: {str(e)}")
             print(f"Error al aplicar la Template Matching: {str(e)}")
+    
+    def configurar_harris_popup(self, es_manual=False):
+        """Popup para configurar parámetros de Harris antes de ejecutar"""
+        tipo = "Manual" if es_manual else "OpenCV"
+        
+        popup = cusTK.CTkToplevel(self)
+        popup.title(f"Parámetros Harris {tipo}")
+        popup.geometry("350x300")
+        popup.grab_set()  # Hace la ventana modal
+        
+        # Valores por defecto
+        default_block = 7 if es_manual else 3
+        default_ksize = 9 if es_manual else 5
+        default_k = 0.04
+        
+        # Block Size
+        cusTK.CTkLabel(popup, text="Block Size (debe ser impar):", font=fuente_global).pack(pady=(20, 5))
+        entrada_block = cusTK.CTkEntry(popup, font=fuente_global)
+        entrada_block.pack(pady=5)
+        entrada_block.insert(0, str(default_block))
+        
+        # Ksize
+        cusTK.CTkLabel(popup, text="Ksize - Sobel (debe ser impar):", font=fuente_global).pack(pady=5)
+        entrada_ksize = cusTK.CTkEntry(popup, font=fuente_global)
+        entrada_ksize.pack(pady=5)
+        entrada_ksize.insert(0, str(default_ksize))
+        
+        # K
+        cusTK.CTkLabel(popup, text="k - Sensibilidad (0.04-0.06):", font=fuente_global).pack(pady=5)
+        entrada_k = cusTK.CTkEntry(popup, font=fuente_global)
+        entrada_k.pack(pady=5)
+        entrada_k.insert(0, str(default_k))
+        
+        def aplicar_harris():
+            try:
+                block = int(entrada_block.get())
+                ksize = int(entrada_ksize.get())
+                k = float(entrada_k.get())
+                
+                # Validaciones
+                if block % 2 == 0 or ksize % 2 == 0:
+                    msg.alerta_message("Block Size y Ksize deben ser números impares.")
+                    return
+                
+                if block < 1 or ksize < 1:
+                    msg.alerta_message("Block Size y Ksize deben ser mayores a 0.")
+                    return
+                
+                if k <= 0:
+                    msg.alerta_message("k debe ser mayor a 0.")
+                    return
+                
+                # Configurar parámetros y ejecutar
+                self.detEsq.setParametros(block, ksize, k)
+                
+                actual = self.obtener_imagen_actual()
+                if actual is None:
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    popup.destroy()
+                    return
+                
+                if self.resultado is not None:
+                    self.cambios.guardar(self.resultado.copy())
+                
+                # Ejecutar el detector correspondiente
+                if es_manual:
+                    resultado = self.detEsq.harris_manual(actual)
+                else:
+                    resultado = self.detEsq.harris_opencv(actual)
+                
+                self.setResultado(resultado)
+                popup.destroy()
+                
+            except ValueError:
+                msg.alerta_message("Por favor, ingrese valores numéricos válidos.")
+            except Exception as e:
+                msg.error_message(f"Error al aplicar Harris: {str(e)}")
+                print(f"Error al aplicar Harris: {str(e)}")
+        
+        # Botones
+        btn_frame = cusTK.CTkFrame(popup)
+        btn_frame.pack(pady=20)
+        
+        cusTK.CTkButton(
+            btn_frame, 
+            text="Aplicar", 
+            command=aplicar_harris,
+            font=fuente_global,
+            width=100
+        ).pack(side="left", padx=5)
+        
+        cusTK.CTkButton(
+            btn_frame, 
+            text="Cancelar", 
+            command=popup.destroy,
+            font=fuente_global,
+            width=100
+        ).pack(side="left", padx=5)
+    
+    def esquinas_action(self, choice):
+        """Acciones del menú de detección de esquinas"""
+        try:
+            actual = self.obtener_imagen_actual()
+            if actual is None:
+                msg.alerta_message("No se ha cargado una imagen.")
+                return
+            
+            if choice == "Harris (OpenCV)":
+                self.configurar_harris_popup(es_manual=False)
+            elif choice == "Harris Manual":
+                self.configurar_harris_popup(es_manual=True)
+                
+        except Exception as e:
+            msg.error_message(f"Error en detección de esquinas: {str(e)}")
+            print(f"Error en detección de esquinas: {str(e)}")
 
 if __name__ == "__main__":
     app = App()
