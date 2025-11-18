@@ -31,6 +31,7 @@ from Mascaras_Operadores import Mascaras_Operadores
 from TemplateMatching import TemplateMatching
 from DeteccionEsquinas import DeteccionEsquinas
 from AnalisisPerimetro import AnalisisPerimetro
+from DeteccionMonedas import DeteccionMonedas
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -73,6 +74,12 @@ class App(cusTK.CTk):
         self.maxSeg = 0 #Constante para número máximo de segmentos en umbralizado por segmentación.
         self.sigma = 0.75 #Constante para filtros Gaussianos.
         self.kirsch_dir = "T" #Dirección para el operador de Kirsch. Por defecto, todas las direcciones.
+        self.detMon = DeteccionMonedas()  # Instancia de detección de monedas
+        self.monedas_scale = 0.4
+        self.monedas_min_area = 500
+        self.monedas_canny_low = 100
+        self.monedas_canny_high = 300
+        self.monedas_kernel_size = 4
 
         #Barra superior para operaciones de PDI
         self.top_bar = cusTK.CTkFrame(self, height=50)
@@ -237,15 +244,15 @@ class App(cusTK.CTk):
         self.tm_menu.pack(side="left", padx=10, pady=10)
         
         # Menu para detección de esquinas
-        self.esquinas_menu = cusTK.CTkOptionMenu(
+        self.deteccion_menu = cusTK.CTkOptionMenu(
             self.top_bar2,
-            values=["Harris (OpenCV)", "Harris Manual"],
-            command=self.esquinas_action,
+            values=["Harris (OpenCV)", "Harris Manual", "Detectar Monedas"],
+            command=self.detection_action,
             font=fuente_global,
             dropdown_font=fuente_global
         )
-        self.esquinas_menu.set("🔍 Detección de Esquinas")
-        self.esquinas_menu.pack(side="left", padx=10, pady=10)
+        self.deteccion_menu.set("🔍 Detección")
+        self.deteccion_menu.pack(side="left", padx=10, pady=10)
 
         #Menu para análisis de perímetro
         self.perimetro_menu = cusTK.CTkOptionMenu(
@@ -292,7 +299,7 @@ class App(cusTK.CTk):
         self.mas_op_menu.set("🎭 Máscaras y Operadores")
         self.morfologia_menu.set("🔳 Morfología")
         self.tm_menu.set("🥅 Temp Match")
-        self.esquinas_menu.set("🔍 Detección de Esquinas")
+        self.deteccion_menu.set("🔍 Detección")
         self.perimetro_menu.set("📐 Análisis Perímetro")
 
     def obtener_imagen_actual(self):
@@ -815,8 +822,6 @@ class App(cusTK.CTk):
         entrada6 = cusTK.CTkOptionMenu(popupC, values=opciones_mostrar, variable=self.kirsch_dir_var)
         entrada6.pack(pady=5)
 
-        cusTK.CTkButton(popupC, text="Aceptar", command=aceptar).pack(pady=15)
-        
         cusTK.CTkLabel(popupC, text="Harris - Block Size:").pack(pady=5)
         entrada7 = cusTK.CTkEntry(popupC)
         entrada7.pack(pady=5)
@@ -831,6 +836,8 @@ class App(cusTK.CTk):
         entrada9 = cusTK.CTkEntry(popupC)
         entrada9.pack(pady=5)
         entrada9.insert(0, str(self.harris_k))
+
+        cusTK.CTkButton(popupC, text="Aceptar", command=aceptar).pack(pady=15)
 
     def elementoEstructural_action(self):
         eK = EditorKernel(self, self.t_kernel, self.t_kernel)
@@ -993,8 +1000,8 @@ class App(cusTK.CTk):
             width=100
         ).pack(side="left", padx=5)
     
-    def esquinas_action(self, choice):
-        """Acciones del menú de detección de esquinas"""
+    def detection_action(self, choice):
+        """Acciones del menú de detección de esquinas y monedas"""
         try:
             actual = self.obtener_imagen_actual()
             if actual is None:
@@ -1005,11 +1012,124 @@ class App(cusTK.CTk):
                 self.configurar_harris_popup(es_manual=False)
             elif choice == "Harris Manual":
                 self.configurar_harris_popup(es_manual=True)
+            elif choice == "Detectar Monedas":
+                self.configurar_monedas_popup()
                 
         except Exception as e:
-            msg.error_message(f"Error en detección de esquinas: {str(e)}")
-            print(f"Error en detección de esquinas: {str(e)}")
+            msg.error_message(f"Error en detección: {str(e)}")
+            print(f"Error en detección: {str(e)}")
 
+    def configurar_monedas_popup(self):
+        """Popup para configurar parámetros de detección de monedas"""
+        popup = cusTK.CTkToplevel(self)
+        popup.title("Parámetros Detección de Monedas")
+        popup.geometry("350x400")
+        popup.grab_set()
+        
+        # Scale
+        cusTK.CTkLabel(popup, text="Escala (0.1 - 1.0):", font=fuente_global).pack(pady=(20, 5))
+        entrada_scale = cusTK.CTkEntry(popup, font=fuente_global)
+        entrada_scale.pack(pady=5)
+        entrada_scale.insert(0, str(self.monedas_scale))
+        
+        # Min Area
+        cusTK.CTkLabel(popup, text="Área mínima:", font=fuente_global).pack(pady=5)
+        entrada_min_area = cusTK.CTkEntry(popup, font=fuente_global)
+        entrada_min_area.pack(pady=5)
+        entrada_min_area.insert(0, str(self.monedas_min_area))
+        
+        # Canny Low
+        cusTK.CTkLabel(popup, text="Canny umbral bajo:", font=fuente_global).pack(pady=5)
+        entrada_canny_low = cusTK.CTkEntry(popup, font=fuente_global)
+        entrada_canny_low.pack(pady=5)
+        entrada_canny_low.insert(0, str(self.monedas_canny_low))
+        
+        # Canny High
+        cusTK.CTkLabel(popup, text="Canny umbral alto:", font=fuente_global).pack(pady=5)
+        entrada_canny_high = cusTK.CTkEntry(popup, font=fuente_global)
+        entrada_canny_high.pack(pady=5)
+        entrada_canny_high.insert(0, str(self.monedas_canny_high))
+        
+        # Kernel Size
+        cusTK.CTkLabel(popup, text="Tamaño kernel (closing):", font=fuente_global).pack(pady=5)
+        entrada_kernel = cusTK.CTkEntry(popup, font=fuente_global)
+        entrada_kernel.pack(pady=5)
+        entrada_kernel.insert(0, str(self.monedas_kernel_size))
+        
+        def aplicar_deteccion():
+            try:
+                scale = float(entrada_scale.get())
+                min_area = int(entrada_min_area.get())
+                canny_low = int(entrada_canny_low.get())
+                canny_high = int(entrada_canny_high.get())
+                kernel_size = int(entrada_kernel.get())
+                
+                # Validaciones
+                if not (0.1 <= scale <= 1.0):
+                    msg.alerta_message("La escala debe estar entre 0.1 y 1.0")
+                    return
+                
+                if min_area < 0:
+                    msg.alerta_message("El área mínima debe ser mayor a 0")
+                    return
+                
+                if canny_low >= canny_high:
+                    msg.alerta_message("El umbral bajo de Canny debe ser menor al alto")
+                    return
+                
+                if kernel_size < 1:
+                    msg.alerta_message("El tamaño del kernel debe ser mayor a 0")
+                    return
+                
+                # Guardar parámetros
+                self.monedas_scale = scale
+                self.monedas_min_area = min_area
+                self.monedas_canny_low = canny_low
+                self.monedas_canny_high = canny_high
+                self.monedas_kernel_size = kernel_size
+                
+                # Configurar y ejecutar
+                self.detMon.setParametros(scale, min_area, canny_low, canny_high, kernel_size)
+                
+                actual = self.obtener_imagen_actual()
+                if actual is None:
+                    msg.alerta_message("No se ha cargado una imagen.")
+                    popup.destroy()
+                    return
+                
+                if self.resultado is not None:
+                    self.cambios.guardar(self.resultado.copy())
+                
+                resultado, dinero, num_monedas, detalle = self.detMon.detectar_monedas(actual)
+                self.setResultado(resultado)
+                popup.destroy()
+                
+            except ValueError:
+                msg.alerta_message("Por favor, ingrese valores numéricos válidos.")
+            except Exception as e:
+                msg.error_message(f"Error al detectar monedas: {str(e)}")
+                print(f"Error al detectar monedas: {str(e)}")
+        
+        # Botones
+        btn_frame = cusTK.CTkFrame(popup)
+        btn_frame.pack(pady=20)
+        
+        cusTK.CTkButton(
+            btn_frame, 
+            text="Detectar", 
+            command=aplicar_deteccion,
+            font=fuente_global,
+            width=100
+        ).pack(side="left", padx=5)
+        
+        cusTK.CTkButton(
+            btn_frame, 
+            text="Cancelar", 
+            command=popup.destroy,
+            font=fuente_global,
+            width=100
+        ).pack(side="left", padx=5)
+    
     def perimetro_action(self, choice): #Acciones del menú de análisis de perímetro
         try:
             actual = self.obtener_imagen_actual()
@@ -1039,3 +1159,4 @@ class App(cusTK.CTk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
+    
