@@ -104,12 +104,24 @@ class App(cusTK.CTk):
         self.image_label1 = cusTK.CTkLabel(self.frame_imagen1, text="")
         self.image_label1.pack(fill="both", expand=True)
 
+        self.saveImg1 = cusTK.CTkButton(self.frame_imagen1, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(1))
+        self.saveImg1.pack(side="right", padx=10, pady=10)
+
+        self.cerrImg1 = cusTK.CTkButton(self.frame_imagen1, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(1))
+        self.cerrImg1.pack(side="right", padx=10, pady=10)
+
         #Subframe para imagen 2
         self.frame_imagen2 = cusTK.CTkFrame(self.frame_imagen)
         self.frame_imagen2.pack(fill="both", expand=True, padx=10, pady=5)
 
         self.image_label2 = cusTK.CTkLabel(self.frame_imagen2, text="")
         self.image_label2.pack(fill="both", expand=True)
+        
+        self.saveImg2 = cusTK.CTkButton(self.frame_imagen2, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(2))
+        self.saveImg2.pack(side="right", padx=10, pady=10)
+
+        self.cerrImg2 = cusTK.CTkButton(self.frame_imagen2, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(2))
+        self.cerrImg2.pack(side="right", padx=10, pady=10)
 
         #Frame para resultado de las operaciones
         self.frameResultado = cusTK.CTkFrame(self.content_frame)
@@ -117,6 +129,16 @@ class App(cusTK.CTk):
 
         self.resultadoLabel = cusTK.CTkLabel(self.frameResultado, text="")
         self.resultadoLabel.pack(fill="both", expand=True, padx=10, pady=10)
+
+        #Boton para deshacer cambios
+        self.saveRes = cusTK.CTkButton(self.frameResultado, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(3))
+        self.saveRes.pack(side="right", padx=10, pady=10)
+
+        self.deshacer_boton = cusTK.CTkButton(self.frameResultado, text="↺", command=self.deshacerCambios, font=fuente_global, width=20, hover_color="#918C00")
+        self.deshacer_boton.pack(side="right", padx=10, pady=10)
+
+        self.cerrRes = cusTK.CTkButton(self.frameResultado, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(3))
+        self.cerrRes.pack(side="right", padx=10, pady=10)
 
         self.init_componentes_PDI() #Inicializa los componentes de la barra superior de PDI
         self.init_componentes_VA() #Inicializa los componentes de la barra superior de Visión Artificial
@@ -223,10 +245,6 @@ class App(cusTK.CTk):
         self.cons_boton = cusTK.CTkButton(self.top_bar, text="⚙ Constantes", command=self.setConstantes, font=fuente_global, hover_color="#0A380A")
         self.cons_boton.pack(side="left", padx=10, pady=10)
 
-        #Boton para deshacer cambios
-        self.deshacer_boton = cusTK.CTkButton(self.top_bar, text="↺", command=self.deshacerCambios, font=fuente_global, width=30, hover_color="#851717")
-        self.deshacer_boton.pack(side="left", padx=10, pady=10)
-
     def init_componentes_VA(self): #Inicializa los componentes de la barra superior de Visión Artificial
         #Menu para template matching
         self.tm_menu = cusTK.CTkOptionMenu(
@@ -314,6 +332,28 @@ class App(cusTK.CTk):
             msg.error_message(f"Error al obtener la imagen actual: {str(e)}")
             print(f"Error al obtener la imagen actual: {str(e)}")
             return None
+
+    def cerrarImagenInd(self, num):
+        temp = self.imagen_actual
+        try:
+            self.imagen_actual = num
+            self.cerrar_imagen()
+            self.imagen_actual = temp
+        except Exception as e:
+            self.imagen_actual = temp
+            msg.error_message(f"Error al cerrar la imagen {num}: {str(e)}")
+            print(f"Error al cerrar la imagen {num}: {str(e)}")
+
+    def guardarImagenInd(self, num):
+        temp = self.imagen_actual
+        try:
+            self.imagen_actual = num
+            self.guardar_imagen()
+            self.imagen_actual = temp
+        except Exception as e:
+            self.imagen_actual = temp
+            msg.error_message(f"Error al guardar la imagen {num}: {str(e)}")
+            print(f"Error al guardar la imagen {num}: {str(e)}")
 
     def archivos_action(self, choice): #Acciones del menú de archivos
         if choice == "Abrir Imagen":
