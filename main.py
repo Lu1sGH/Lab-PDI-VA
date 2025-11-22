@@ -32,6 +32,7 @@ from TemplateMatching import TemplateMatching
 from DeteccionEsquinas import DeteccionEsquinas
 from AnalisisPerimetro import AnalisisPerimetro
 from DeteccionMonedas import DeteccionMonedas
+from Descriptores import Descriptores
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -59,9 +60,11 @@ class App(cusTK.CTk):
         self.maskOp = Mascaras_Operadores() #Instancia de la clase de máscaras y operadores
         self.tmO = TemplateMatching() #Instancia de la clase de Template Matching
         self.detEsq = DeteccionEsquinas()  # Instancia de detección de esquinas
+        self.descriptores = Descriptores() #Instancia de la clase de descriptores
         self.harris_blockSize = 3
         self.harris_ksize = 5
         self.harris_k = 0.04
+        self.num_puntos_df = None
         self.analisisPerimetro = AnalisisPerimetro() #Instancia de la clase de análisis de perímetro
         self.imagen1 = None
         self.imagen2 = None
@@ -80,6 +83,7 @@ class App(cusTK.CTk):
         self.monedas_canny_low = 100
         self.monedas_canny_high = 300
         self.monedas_kernel_size = 4
+        self.vectorCplx = None #Vector de números complejos para descriptores de Fourier
 
         #Barra superior para operaciones de PDI
         self.top_bar = cusTK.CTkFrame(self, height=50)
@@ -283,6 +287,17 @@ class App(cusTK.CTk):
         )
         self.perimetro_menu.set("📐 Análisis Perímetro")
         self.perimetro_menu.pack(side="left", padx=10, pady=10)
+
+        #Menu descriptores
+        self.descriptores_menu = cusTK.CTkOptionMenu(
+            self.top_bar2,
+            values=["Descriptor de Fourier", "Reconstruir DF"],
+            command=self.descriptores_action,
+            font=fuente_global,
+            dropdown_font=fuente_global
+        )
+        self.descriptores_menu.set("⚪ Descriptores")
+        self.descriptores_menu.pack(side="left", padx=10, pady=10)
 
     """ DEPRECATED
     def toggle_theme(self): #Cambiar entre modo claro y oscuro
@@ -783,11 +798,17 @@ class App(cusTK.CTk):
             msg.error_message(f"Error al cerrar la imagen: {str(e)}")
             print(f"Error al cerrar la imagen: {str(e)}")
 
-    def setConstantes(self): #Método para ajustar constantes
-        popupC = cusTK.CTkToplevel(self)#Crear ventana emergente
+    def setConstantes(self):  #Método para ajustar constantes
+        popupC = cusTK.CTkToplevel(self)
         popupC.title("Ajustar constantes")
-        popupC.geometry("300x550")
-        popupC.grab_set()  #Hace modal la ventana
+        popupC.geometry("450x600")
+        popupC.grab_set()
+
+        frame = cusTK.CTkFrame(popupC)
+        frame.pack(padx=10, pady=10, fill="both", expand=True)
+
+        frame.columnconfigure(0, weight=1)
+        frame.columnconfigure(1, weight=1)
 
         def aceptar():
             try:
@@ -796,10 +817,12 @@ class App(cusTK.CTk):
                 const = float(entrada3.get())
                 segmentos = int(entrada4.get())
                 desEst = float(entrada5.get())
-                k_dir = self.kirsch_dir_map[self.kirsch_dir_var.get()]  #Obtener el valor real de la dirección seleccionada
+                k_dir = self.kirsch_dir_map[self.kirsch_dir_var.get()]
                 h_blockSize = int(entrada7.get())
                 h_ksize = int(entrada8.get())
                 h_k = float(entrada9.get())
+                num_puntos_df = int(entrada10.get()) if int(entrada10.get()) > 0 else None
+
                 if kernel % 2 != 1:
                     msg.alerta_message("El tamaño del kernel tiene que ser un número impar.")
                 else:
@@ -812,70 +835,71 @@ class App(cusTK.CTk):
                     self.harris_blockSize = h_blockSize
                     self.harris_ksize = h_ksize
                     self.harris_k = h_k
+                    self.num_puntos_df = num_puntos_df
                     popupC.destroy()
+
             except ValueError:
                 msg.alerta_message("Por favor, ingrese solo números.")
 
-        #Elementos de la ventana
-        cusTK.CTkLabel(popupC, text="Tamaño del kernel:").pack(pady=(20, 5))
-        entrada1 = cusTK.CTkEntry(popupC)
-        entrada1.pack(pady=5)
+        cusTK.CTkLabel(frame, text="Tamaño del kernel:").grid(row=0, column=0, sticky="w", pady=5)
+        entrada1 = cusTK.CTkEntry(frame)
+        entrada1.grid(row=0, column=1, pady=5, padx=5)
         entrada1.insert(0, str(self.t_kernel))
 
-        cusTK.CTkLabel(popupC, text="C para umbralizacion adaptativa:").pack(pady=5)
-        entrada2 = cusTK.CTkEntry(popupC)
-        entrada2.pack(pady=5)
+        cusTK.CTkLabel(frame, text="C (umbralización adaptativa):").grid(row=1, column=0, sticky="w", pady=5)
+        entrada2 = cusTK.CTkEntry(frame)
+        entrada2.grid(row=1, column=1, pady=5, padx=5)
         entrada2.insert(0, str(self.c))
 
-        cusTK.CTkLabel(popupC, text="Constante para operaciones aritméticas,\n filtro promediador pesado y corrección gamma:").pack(pady=5)
-        entrada3 = cusTK.CTkEntry(popupC)
-        entrada3.pack(pady=5)
+        cusTK.CTkLabel(frame, text="Constante para filtros y gamma:").grid(row=2, column=0, sticky="w", pady=5)
+        entrada3 = cusTK.CTkEntry(frame)
+        entrada3.grid(row=2, column=1, pady=5, padx=5)
         entrada3.insert(0, str(self.const))
 
-        cusTK.CTkLabel(popupC, text="Número máximo de segmentos:").pack(pady=5)
-        entrada4 = cusTK.CTkEntry(popupC)
-        entrada4.pack(pady=5)
+        cusTK.CTkLabel(frame, text="Número máximo de segmentos:").grid(row=3, column=0, sticky="w", pady=5)
+        entrada4 = cusTK.CTkEntry(frame)
+        entrada4.grid(row=3, column=1, pady=5, padx=5)
         entrada4.insert(0, str(self.maxSeg))
 
-        cusTK.CTkLabel(popupC, text="Sigma:").pack(pady=5)
-        entrada5 = cusTK.CTkEntry(popupC)
-        entrada5.pack(pady=5)
+        cusTK.CTkLabel(frame, text="Sigma:").grid(row=4, column=0, sticky="w", pady=5)
+        entrada5 = cusTK.CTkEntry(frame)
+        entrada5.grid(row=4, column=1, pady=5, padx=5)
         entrada5.insert(0, str(self.sigma))
 
-        cusTK.CTkLabel(popupC, text="Dirección del compass de Kirsch:").pack(pady=5)
+        cusTK.CTkLabel(frame, text="Dirección Kirsch:").grid(row=5, column=0, sticky="w", pady=5)
+        
         direcciones_kirsch = [
-            ("Todos", "T"),
-            ("Norte", "N"),
-            ("Noreste", "NE"),
-            ("Este", "E"),
-            ("Sureste", "SE"),
-            ("Sur", "S"),
-            ("Suroeste", "SW"),
-            ("Oeste", "W"),
-            ("Noroeste", "NW")
+            ("Todos", "T"), ("Norte", "N"), ("Noreste", "NE"), ("Este", "E"),
+            ("Sureste", "SE"), ("Sur", "S"), ("Suroeste", "SW"),
+            ("Oeste", "W"), ("Noroeste", "NW")
         ]
-        #Mostrar solo los nombres en el menú
+
         opciones_mostrar = [nombre for nombre, _ in direcciones_kirsch]
-        #Mapeo nombre -> valor
         self.kirsch_dir_map = {nombre: valor for nombre, valor in direcciones_kirsch}
         self.kirsch_dir_var = tk.StringVar(value=opciones_mostrar[0])
-        entrada6 = cusTK.CTkOptionMenu(popupC, values=opciones_mostrar, variable=self.kirsch_dir_var)
-        entrada6.pack(pady=5)
 
-        cusTK.CTkLabel(popupC, text="Harris - Block Size:").pack(pady=5)
-        entrada7 = cusTK.CTkEntry(popupC)
-        entrada7.pack(pady=5)
+        entrada6 = cusTK.CTkOptionMenu(frame, values=opciones_mostrar, variable=self.kirsch_dir_var)
+        entrada6.grid(row=5, column=1, pady=5, padx=5)
+
+        cusTK.CTkLabel(frame, text="Harris - Block Size:").grid(row=6, column=0, sticky="w", pady=5)
+        entrada7 = cusTK.CTkEntry(frame)
+        entrada7.grid(row=6, column=1, pady=5, padx=5)
         entrada7.insert(0, str(self.harris_blockSize))
 
-        cusTK.CTkLabel(popupC, text="Harris - Ksize (Sobel):").pack(pady=5)
-        entrada8 = cusTK.CTkEntry(popupC)
-        entrada8.pack(pady=5)
+        cusTK.CTkLabel(frame, text="Harris - Ksize (Sobel):").grid(row=7, column=0, sticky="w", pady=5)
+        entrada8 = cusTK.CTkEntry(frame)
+        entrada8.grid(row=7, column=1, pady=5, padx=5)
         entrada8.insert(0, str(self.harris_ksize))
 
-        cusTK.CTkLabel(popupC, text="Harris - k (sensibilidad):").pack(pady=5)
-        entrada9 = cusTK.CTkEntry(popupC)
-        entrada9.pack(pady=5)
+        cusTK.CTkLabel(frame, text="Harris - k (sensibilidad):").grid(row=8, column=0, sticky="w", pady=5)
+        entrada9 = cusTK.CTkEntry(frame)
+        entrada9.grid(row=8, column=1, pady=5, padx=5)
         entrada9.insert(0, str(self.harris_k))
+
+        cusTK.CTkLabel(frame, text="No. de puntos DF:").grid(row=9, column=0, sticky="w", pady=5)
+        entrada10 = cusTK.CTkEntry(frame)
+        entrada10.grid(row=9, column=1, pady=5, padx=5)
+        entrada10.insert(0, str(self.num_puntos_df))
 
         cusTK.CTkButton(popupC, text="Aceptar", command=aceptar).pack(pady=15)
 
@@ -1195,6 +1219,27 @@ class App(cusTK.CTk):
         except Exception as e:
             msg.error_message(f"Error en análisis de perímetro: {str(e)}")
             print(f"Error en análisis de perímetro: {str(e)}")
+
+    def descriptores_action(self, choice): #Acciones del menú de descriptores
+        try:
+            actual = self.obtener_imagen_actual()
+            if actual is None:
+                msg.alerta_message("No se ha cargado una imagen.")
+                return
+            
+            if self.resultado is not None: #Si hay un resultado, se guarda en la pila de cambios para que no se pierda
+                self.cambios.guardar(self.resultado.copy())
+            
+            if choice == "Descriptor de Fourier":
+                self.vectorCplx = self.descriptores.descFourier(actual, self.num_puntos_df)
+                msg.alerta_message("Cálculo de los descriptores de Fourier completado. El resultado se ha almacenado internamente. Para visualizarlo, utilice la opción de reconstrucción.")
+            elif choice == "Reconstruir DF":
+                resultado = self.descriptores.reconstContDF(self.vectorCplx)
+                self.setResultado(resultado)
+
+        except Exception as e:
+            msg.error_message(f"Error en descriptores: {str(e)}")
+            print(f"Error en descriptores: {str(e)}")
 
 if __name__ == "__main__":
     app = App()
