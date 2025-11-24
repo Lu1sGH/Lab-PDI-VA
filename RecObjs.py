@@ -11,7 +11,7 @@ class RecObjs:
             
             vDF = descObj.descFourier(img, precision=20)
             vDF = vDF.astype(np.float64)
-            momHu = descObj.momentosHU(img)
+            momHu = descObj.momentosHU(img, verboose=False)
             vecgen = []
 
             for i in momHu:

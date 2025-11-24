@@ -77,7 +77,7 @@ class Descriptores:
             msg.error_message(f"Error en la función Descriptor de Fourier: {str(e)}")
             print(f"Error en la función Descriptor de Fourier: {str(e)}")
 
-    def momentosHU(self, img):
+    def momentosHU(self, img, verboose=True):
         try:
             if len(img.shape) == 3:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -92,8 +92,9 @@ class Descriptores:
             for i in range(len(momHU)):
                 txtmHU += f"Momento HU {i+1}: {momHU[i][0]} \n"
             
-            msg.todobien_message(str(txtmHU))
-            print(f"Momentos:\n{momHU}")
+            if verboose:
+                msg.todobien_message(str(txtmHU))
+                print(f"Momentos:\n{momHU}")
 
             return momHU
         except Exception as e:

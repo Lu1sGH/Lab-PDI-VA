@@ -320,7 +320,7 @@ class App(cusTK.CTk):
             font=fuente_global,
             dropdown_font=fuente_global
         )
-        self.recObj_menu.set("🎲 Reconocimiento Objetos")
+        self.recObj_menu.set("🎲 Rec. de Objetos")
         self.recObj_menu.pack(side="left", padx=10, pady=10)
 
     """ DEPRECATED
@@ -358,6 +358,8 @@ class App(cusTK.CTk):
         self.tm_menu.set("🥅 Temp Match")
         self.deteccion_menu.set("🔍 Detección")
         self.perimetro_menu.set("📐 Análisis Perímetro")
+        self.descriptores_menu.set("⚪ Descriptores")
+        self.recObj_menu.set("🎲 Rec. de Objetos")
 
     def obtener_imagen_actual(self):
         try:
@@ -1284,4 +1286,3 @@ class App(cusTK.CTk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
-    
