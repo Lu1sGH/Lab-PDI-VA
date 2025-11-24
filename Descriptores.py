@@ -22,14 +22,30 @@ class Descriptores:
             if precision is not None and precision > len(cont):
                 raise ValueError("El valor de precisión debe ser menor o igual al número de puntos del contorno.")
             
-            contCplx = cont[:precision, 0, 0] + 1j * cont[:precision, 0, 1] if precision else cont[:, 0, 0] + 1j * cont[:, 0, 1]
+            contCplx = []
+
+            if precision is not None:
+                paso = len(cont) // precision
+                if paso == 0:
+                    paso = 1
+                for i in range(0, len(cont), paso):
+                    contCplx.append(cont[i, 0, 0] + 1j * cont[i, 0, 1])
+            else:
+                contCplx = cont[:, 0, 0] + 1j * cont[:, 0, 1]
+
+            contCplx = contCplx - np.mean(contCplx)
 
             #Aplicar Transformada Rápida de Fourier
-            descriotores = np.fft.fft(contCplx)
-            descriotores [0] = 0 #Para que no importe la translación
-            descriotores = descriotores / np.abs(descriotores[1]) #Para que no importe la escala
+            descriptores = np.fft.fft(contCplx)
+            descriptores = np.abs(descriptores) #Invarianza a la rotación
+            descriptores[0] = 0  #Invarianza a la traslación
+            
+            #Invarianza a la escala
+            epsilon = 1e-12
+            id = np.where(np.abs(descriptores) < epsilon)[0]
+            descriptores = descriptores / np.abs(descriptores[id[0]+1])
 
-            return descriotores
+            return descriptores
         except Exception as e:
             msg.error_message(f"Error en la función Descriptor de Fourier: {str(e)}")
             print(f"Error en la función Descriptor de Fourier: {str(e)}")
@@ -60,3 +76,26 @@ class Descriptores:
         except Exception as e:
             msg.error_message(f"Error en la función Descriptor de Fourier: {str(e)}")
             print(f"Error en la función Descriptor de Fourier: {str(e)}")
+
+    def momentosHU(self, img):
+        try:
+            if len(img.shape) == 3:
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+            momentos = cv2.moments(img)
+            momHU = cv2.HuMoments(momentos)
+
+            for i in range(len(momHU)):
+                momHU[i] = -1 * np.sign(momHU[i]) * np.log10(abs(momHU[i])) if momHU[i] != 0 else 0
+
+            txtmHU = ""
+            for i in range(len(momHU)):
+                txtmHU += f"Momento HU {i+1}: {momHU[i][0]} \n"
+            
+            msg.todobien_message(str(txtmHU))
+            print(f"Momentos:\n{momHU}")
+
+            return momHU
+        except Exception as e:
+            msg.error_message(f"Error en la función Momentos HU: {str(e)}")
+            print(f"Error en la función Momentos HU: {str(e)}")

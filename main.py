@@ -33,6 +33,7 @@ from DeteccionEsquinas import DeteccionEsquinas
 from AnalisisPerimetro import AnalisisPerimetro
 from DeteccionMonedas import DeteccionMonedas
 from Descriptores import Descriptores
+from RecObjs import RecObjs
 
 cusTK.set_appearance_mode("Dark")  #Configuración inicial de la apariencia
 cusTK.set_default_color_theme("blue")
@@ -61,6 +62,7 @@ class App(cusTK.CTk):
         self.tmO = TemplateMatching() #Instancia de la clase de Template Matching
         self.detEsq = DeteccionEsquinas()  # Instancia de detección de esquinas
         self.descriptores = Descriptores() #Instancia de la clase de descriptores
+        self.recObjs = RecObjs() #Instancia de la clase de reconocimiento de objetos
         self.harris_blockSize = 3
         self.harris_ksize = 5
         self.harris_k = 0.04
@@ -105,44 +107,55 @@ class App(cusTK.CTk):
         self.frame_imagen1 = cusTK.CTkFrame(self.frame_imagen)
         self.frame_imagen1.pack(fill="both", expand=True, padx=10, pady=5)
 
-        self.image_label1 = cusTK.CTkLabel(self.frame_imagen1, text="")
-        self.image_label1.pack(fill="both", expand=True)
+        self.subFBImg1 = cusTK.CTkFrame(self.frame_imagen1, height=20, fg_color="transparent")
+        self.subFBImg1.pack(fill="x", padx=5, pady=5)
 
-        self.saveImg1 = cusTK.CTkButton(self.frame_imagen1, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(1))
+        self.saveImg1 = cusTK.CTkButton(self.subFBImg1, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(1))
         self.saveImg1.pack(side="right", padx=10, pady=10)
 
-        self.cerrImg1 = cusTK.CTkButton(self.frame_imagen1, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(1))
+        self.cerrImg1 = cusTK.CTkButton(self.subFBImg1, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(1))
         self.cerrImg1.pack(side="right", padx=10, pady=10)
+
+        self.image_label1 = cusTK.CTkLabel(self.frame_imagen1, text="")
+        self.image_label1.pack(fill="both", expand=True)
 
         #Subframe para imagen 2
         self.frame_imagen2 = cusTK.CTkFrame(self.frame_imagen)
         self.frame_imagen2.pack(fill="both", expand=True, padx=10, pady=5)
 
-        self.image_label2 = cusTK.CTkLabel(self.frame_imagen2, text="")
-        self.image_label2.pack(fill="both", expand=True)
-        
-        self.saveImg2 = cusTK.CTkButton(self.frame_imagen2, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(2))
+        self.subFBImg2 = cusTK.CTkFrame(self.frame_imagen2, height=20, fg_color="transparent")
+        self.subFBImg2.pack(fill="x", padx=5, pady=5)
+
+        self.saveImg2 = cusTK.CTkButton(self.subFBImg2, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(2))
         self.saveImg2.pack(side="right", padx=10, pady=10)
 
-        self.cerrImg2 = cusTK.CTkButton(self.frame_imagen2, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(2))
+        self.cerrImg2 = cusTK.CTkButton(self.subFBImg2, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(2))
         self.cerrImg2.pack(side="right", padx=10, pady=10)
+
+        self.image_label2 = cusTK.CTkLabel(self.frame_imagen2, text="")
+        self.image_label2.pack(fill="both", expand=True)
 
         #Frame para resultado de las operaciones
         self.frameResultado = cusTK.CTkFrame(self.content_frame)
         self.frameResultado.pack(side="right", fill="both", expand=True, padx=5, pady=5)
 
-        self.resultadoLabel = cusTK.CTkLabel(self.frameResultado, text="")
-        self.resultadoLabel.pack(fill="both", expand=True, padx=10, pady=10)
+        #Subframe para botones del frame resultado
+        self.resultButtonsFrame = cusTK.CTkFrame(self.frameResultado, height=40, fg_color="transparent")
+        self.resultButtonsFrame.pack(side="top", fill="x", padx=5, pady=(5,0))
 
-        #Boton para deshacer cambios
-        self.saveRes = cusTK.CTkButton(self.frameResultado, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(3))
+        #Boton para deshacer cambios, guardar y cerrar imagen resultado
+        self.saveRes = cusTK.CTkButton(self.resultButtonsFrame, text="💾", font=fuente_global, hover_color="#326F00", width=20, corner_radius=10, command=lambda: self.guardarImagenInd(3))
         self.saveRes.pack(side="right", padx=10, pady=10)
 
-        self.deshacer_boton = cusTK.CTkButton(self.frameResultado, text="↺", command=self.deshacerCambios, font=fuente_global, width=20, hover_color="#918C00")
+        self.deshacer_boton = cusTK.CTkButton(self.resultButtonsFrame, text="↺", command=self.deshacerCambios, font=fuente_global, width=20, hover_color="#918C00")
         self.deshacer_boton.pack(side="right", padx=10, pady=10)
 
-        self.cerrRes = cusTK.CTkButton(self.frameResultado, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(3))
+        self.cerrRes = cusTK.CTkButton(self.resultButtonsFrame, text="×", font=fuente_global, hover_color="#6F0000", width=20, corner_radius=10, command=lambda: self.cerrarImagenInd(3))
         self.cerrRes.pack(side="right", padx=10, pady=10)
+
+        #Label para mostrar la imagen resultado
+        self.resultadoLabel = cusTK.CTkLabel(self.frameResultado, text="")
+        self.resultadoLabel.pack(fill="both", expand=True, padx=10, pady=10)
 
         self.init_componentes_PDI() #Inicializa los componentes de la barra superior de PDI
         self.init_componentes_VA() #Inicializa los componentes de la barra superior de Visión Artificial
@@ -291,13 +304,24 @@ class App(cusTK.CTk):
         #Menu descriptores
         self.descriptores_menu = cusTK.CTkOptionMenu(
             self.top_bar2,
-            values=["Descriptor de Fourier", "Reconstruir DF"],
+            values=["Descriptor de Fourier", "Reconstruir DF", "Momentos Hu"],
             command=self.descriptores_action,
             font=fuente_global,
             dropdown_font=fuente_global
         )
         self.descriptores_menu.set("⚪ Descriptores")
         self.descriptores_menu.pack(side="left", padx=10, pady=10)
+
+        #Menu descriptores
+        self.recObj_menu = cusTK.CTkOptionMenu(
+            self.top_bar2,
+            values=["Gen. Vectores"],
+            command=self.recObj_action,
+            font=fuente_global,
+            dropdown_font=fuente_global
+        )
+        self.recObj_menu.set("🎲 Reconocimiento Objetos")
+        self.recObj_menu.pack(side="left", padx=10, pady=10)
 
     """ DEPRECATED
     def toggle_theme(self): #Cambiar entre modo claro y oscuro
@@ -743,7 +767,7 @@ class App(cusTK.CTk):
             if self.imagen1 is not None:
                 img_rgb1 = cv2.cvtColor(self.imagen1, cv2.COLOR_BGR2RGB)
                 img_pil1 = Image.fromarray(img_rgb1)
-                img_pil1.thumbnail((800, 400))
+                img_pil1.thumbnail((300, 300))
                 self.tk_img1 = CTkImage(dark_image=img_pil1, size=img_pil1.size)
                 self.image_label1.configure(image=self.tk_img1)
             else:
@@ -753,7 +777,7 @@ class App(cusTK.CTk):
             if self.imagen2 is not None:
                 img_rgb2 = cv2.cvtColor(self.imagen2, cv2.COLOR_BGR2RGB)
                 img_pil2 = Image.fromarray(img_rgb2)
-                img_pil2.thumbnail((800, 400))
+                img_pil2.thumbnail((300, 300))
                 self.tk_img2 = CTkImage(dark_image=img_pil2, size=img_pil2.size)
                 self.image_label2.configure(image=self.tk_img2)
             else:
@@ -1236,10 +1260,26 @@ class App(cusTK.CTk):
             elif choice == "Reconstruir DF":
                 resultado = self.descriptores.reconstContDF(self.vectorCplx)
                 self.setResultado(resultado)
+            elif choice == "Momentos Hu":
+                resultado = self.descriptores.momentosHU(actual)
 
         except Exception as e:
             msg.error_message(f"Error en descriptores: {str(e)}")
             print(f"Error en descriptores: {str(e)}")
+
+    def recObj_action(self, choice):
+        try:
+            actual = self.obtener_imagen_actual()
+            if actual is None:
+                msg.alerta_message("No se ha cargado una imagen.")
+                return
+            
+            if choice == "Gen. Vectores":
+                self.recObjs.genVec(actual, self.descriptores)
+
+        except Exception as e:
+            msg.error_message(f"Error en reconocimiento de objetos: {str(e)}")
+            print(f"Error en reconocimiento de objetos: {str(e)}")
 
 if __name__ == "__main__":
     app = App()
