@@ -9,7 +9,7 @@ class Descriptores:
                 msg.alerta_message("La imagen se ha binarizado para su uso")
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             
-            _, imgT = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+            _, imgT = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             
             #Encontrar contornos
             contornos, _ = cv2.findContours(imgT, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
