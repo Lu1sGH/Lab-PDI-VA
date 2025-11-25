@@ -62,7 +62,7 @@ class App(cusTK.CTk):
         self.tmO = TemplateMatching() #Instancia de la clase de Template Matching
         self.detEsq = DeteccionEsquinas()  # Instancia de detección de esquinas
         self.descriptores = Descriptores() #Instancia de la clase de descriptores
-        self.recObjs = RecObjs() #Instancia de la clase de reconocimiento de objetos
+        self.recObjs = RecObjs(dataset_path="data.csv", k=3) #Instancia de la clase de reconocimiento de objetos
         self.harris_blockSize = 3
         self.harris_ksize = 5
         self.harris_k = 0.04
@@ -1277,7 +1277,14 @@ class App(cusTK.CTk):
                 return
             
             if choice == "Gen. Vectores":
-                self.recObjs.genVec(actual, self.descriptores)
+                vector, clase, probabilidades, nombre = self.recObjs.genVec(actual, self.descriptores)
+            
+                # Mostrar resultado al usuario
+                if clase is not None:
+                    resultado_msg = f"Clasificación: {nombre}\n"
+                    resultado_msg += f"Círculo: {probabilidades[0]:.2%}\n"
+                    resultado_msg += f"Cuadrado: {probabilidades[1]:.2%}"
+                    msg.todobien_message(resultado_msg)
 
         except Exception as e:
             msg.error_message(f"Error en reconocimiento de objetos: {str(e)}")
